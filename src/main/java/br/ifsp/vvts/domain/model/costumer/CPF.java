@@ -1,8 +1,7 @@
-package br.ifsp.vvts.domain.model;
+package br.ifsp.vvts.domain.model.costumer;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Pattern;

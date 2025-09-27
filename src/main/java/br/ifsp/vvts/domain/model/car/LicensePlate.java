@@ -1,4 +1,4 @@
-package br.ifsp.vvts.domain.model;
+package br.ifsp.vvts.domain.model.car;
 
 import java.util.Objects;
 import java.util.regex.Pattern;

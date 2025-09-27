@@ -1,4 +1,4 @@
-package br.ifsp.vvts.domain.model;
+package br.ifsp.vvts.domain.model.car;
 
 public record Car(
         LicensePlate licensePlate,

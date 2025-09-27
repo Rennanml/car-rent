@@ -1,5 +1,6 @@
 package br.ifsp.vvts.domain.model;
 
+import br.ifsp.vvts.domain.model.costumer.CPF;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

@@ -1,5 +1,6 @@
 package br.ifsp.vvts.domain.model;
 
+import br.ifsp.vvts.domain.model.car.LicensePlate;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.params.ParameterizedTest;

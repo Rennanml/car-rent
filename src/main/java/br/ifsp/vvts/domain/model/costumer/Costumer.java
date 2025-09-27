@@ -1,4 +1,4 @@
-package br.ifsp.vvts.domain.model;
+package br.ifsp.vvts.domain.model.costumer;
 
 public record Costumer(String name, CPF cpf) {
     public Costumer {
