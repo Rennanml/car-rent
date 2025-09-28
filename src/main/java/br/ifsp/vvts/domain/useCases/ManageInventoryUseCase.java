@@ -43,8 +43,9 @@ public class ManageInventoryUseCase {
 
     @Transactional
     @Modifying
-    public Optional<Costumer> updateCostumer(Long id, String newName) {
-        return costumerRepository.findById(id)
+    public Optional<Costumer> updateCostumer(String costumerCpf, String newName) {
+        var cpf = CPF.of(costumerCpf);
+        return costumerRepository.findByCpfNumber(cpf.unformat())
                 .map(entity -> {
                     Costumer updatedDomainCostumer = new Costumer(newName, CPF.of(entity.getCpf().getNumber()));
                     entity.setName(updatedDomainCostumer.name());
@@ -55,17 +56,19 @@ public class ManageInventoryUseCase {
 
     @Transactional
     @Modifying
-    public boolean deleteCostumer(Long id) {
-        if (costumerRepository.existsById(id)) {
-            costumerRepository.deleteById(id);
-            return true;
-        }
-        return false;
+    public boolean deleteCostumer(String cpfNumber) {
+        CPF cpf = CPF.of(cpfNumber);
+        return costumerRepository.findByCpfNumber(cpf.unformat())
+                .map(entity -> {
+                    costumerRepository.delete(entity);
+                    return true;
+                }).orElse(false);
     }
 
     @Transactional
-    public Optional<Costumer> findCostumerById(Long id) {
-        return costumerRepository.findById(id)
+    public Optional<Costumer> findCostumerByCpf(String cpfNumber) {
+        CPF cpf = CPF.of(cpfNumber); // Valida o CPF
+        return costumerRepository.findByCpfNumber(cpf.unformat())
                 .map(costumerMapper::toDomain);
     }
 

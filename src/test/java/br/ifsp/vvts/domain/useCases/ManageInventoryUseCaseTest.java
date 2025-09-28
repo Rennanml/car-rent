@@ -2,6 +2,7 @@ package br.ifsp.vvts.domain.useCases;
 
 import br.ifsp.vvts.domain.model.costumer.CPF;
 import br.ifsp.vvts.domain.model.costumer.Costumer;
+import br.ifsp.vvts.exception.EntityAlreadyExistsException;
 import br.ifsp.vvts.infra.persistence.entity.costumer.CPFEmbeddable;
 import br.ifsp.vvts.infra.persistence.entity.costumer.CostumerEntity;
 import br.ifsp.vvts.infra.persistence.mapper.CostumerMapper;
@@ -34,8 +35,9 @@ class ManageInventoryUseCaseTest {
     private ManageInventoryUseCase manageInventoryUseCase;
 
     private final String VALID_CPF_STRING = "123.456.789-09";
+    private final String VALID_CPF_UNFORMATTED = "12345678909";
     private final CPF VALID_CPF_OBJECT = CPF.of(VALID_CPF_STRING);
-    private final CPFEmbeddable VALID_CPF_EMBEDDABLE = new CPFEmbeddable(VALID_CPF_STRING);
+    private final CPFEmbeddable VALID_CPF_EMBEDDABLE = new CPFEmbeddable(VALID_CPF_UNFORMATTED);
 
     private final String INVALID_CPF_STRING = "123.456.789-10";
 
@@ -51,6 +53,7 @@ class ManageInventoryUseCaseTest {
             var entity = new CostumerEntity(null, "John Doe", VALID_CPF_EMBEDDABLE);
             var savedEntity = new CostumerEntity(1L, "John Doe", VALID_CPF_EMBEDDABLE);
 
+            when(costumerRepository.findByCpfNumber(VALID_CPF_UNFORMATTED)).thenReturn(Optional.empty());
             when(costumerMapper.toEntity(any(Costumer.class))).thenReturn(entity);
             when(costumerRepository.save(entity)).thenReturn(savedEntity);
             when(costumerMapper.toDomain(savedEntity)).thenReturn(costumer);
@@ -75,6 +78,15 @@ class ManageInventoryUseCaseTest {
             assertThatThrownBy(() -> manageInventoryUseCase.createCostumer("John Doe", null))
                     .isInstanceOf(IllegalArgumentException.class);
         }
+
+        @Test
+        @DisplayName("Should throw exception when creating costumer with a existing CPF")
+        void shouldThrowExceptionWhenCreatingWithExistingCPF() {
+            var entity = new CostumerEntity(1L, "John Doe", VALID_CPF_EMBEDDABLE);
+            when(costumerRepository.findByCpfNumber(VALID_CPF_UNFORMATTED)).thenReturn(Optional.of(entity));
+            assertThatThrownBy(() -> manageInventoryUseCase.createCostumer("John Doe", VALID_CPF_STRING))
+                    .isInstanceOf(EntityAlreadyExistsException.class);
+        }
     }
 
     @Nested
@@ -87,11 +99,11 @@ class ManageInventoryUseCaseTest {
             var existingEntity = new CostumerEntity(1L, "John Doe", VALID_CPF_EMBEDDABLE);
             var updatedCostumer = new Costumer("John Updated", VALID_CPF_OBJECT);
 
-            when(costumerRepository.findById(1L)).thenReturn(Optional.of(existingEntity));
+            when(costumerRepository.findByCpfNumber(VALID_CPF_UNFORMATTED)).thenReturn(Optional.of(existingEntity));
             when(costumerRepository.save(any(CostumerEntity.class))).thenReturn(existingEntity);
             when(costumerMapper.toDomain(existingEntity)).thenReturn(updatedCostumer);
 
-            Optional<Costumer> result = manageInventoryUseCase.updateCostumer(1L, "John Updated");
+            Optional<Costumer> result = manageInventoryUseCase.updateCostumer(VALID_CPF_STRING, "John Updated");
 
             assertThat(result).isPresent();
             assertThat(result.get().name()).isEqualTo("John Updated");
@@ -102,11 +114,22 @@ class ManageInventoryUseCaseTest {
         @DisplayName("Should throw exception when updating with invalid information")
         void shouldThrowExceptionWhenUpdatingWithInvalidInfo() {
             var existingEntity = new CostumerEntity(1L, "John Doe", VALID_CPF_EMBEDDABLE);
-            when(costumerRepository.findById(1L)).thenReturn(Optional.of(existingEntity));
+            when(costumerRepository.findByCpfNumber(VALID_CPF_UNFORMATTED)).thenReturn(Optional.of(existingEntity));
 
-            assertThatThrownBy(() -> manageInventoryUseCase.updateCostumer(1L, ""))
+            assertThatThrownBy(() -> manageInventoryUseCase.updateCostumer(VALID_CPF_STRING, ""))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("Costumer name cannot be blank");
+        }
+
+        @Test
+        @DisplayName("Should return empty when updating a non-existent costumer")
+        void shouldReturnEmptyWhenUpdatingNonExistentCostumer() {
+            when(costumerRepository.findByCpfNumber(VALID_CPF_UNFORMATTED)).thenReturn(Optional.empty());
+
+            Optional<Costumer> result = manageInventoryUseCase.updateCostumer(VALID_CPF_STRING, "Any Name");
+
+            assertThat(result).isNotPresent();
+            verify(costumerRepository, never()).save(any());
         }
     }
 
@@ -117,24 +140,27 @@ class ManageInventoryUseCaseTest {
         @Test
         @DisplayName("Should delete costumer successfully")
         void shouldDeleteExistingCostumer() {
-            when(costumerRepository.existsById(1L)).thenReturn(true);
-            doNothing().when(costumerRepository).deleteById(1L);
+            var entityToDelete = new CostumerEntity(1L, "John Doe", VALID_CPF_EMBEDDABLE);
+            when(costumerRepository.findByCpfNumber(VALID_CPF_UNFORMATTED)).thenReturn(Optional.of(entityToDelete));
+            doNothing().when(costumerRepository).delete(entityToDelete);
 
-            boolean result = manageInventoryUseCase.deleteCostumer(1L);
+            boolean result = manageInventoryUseCase.deleteCostumer(VALID_CPF_STRING);
 
             assertThat(result).isTrue();
-            verify(costumerRepository).deleteById(1L);
+            verify(costumerRepository).findByCpfNumber(VALID_CPF_UNFORMATTED);
+            verify(costumerRepository).delete(entityToDelete);
         }
 
         @Test
         @DisplayName("Should return false when deleting a non-existent costumer")
         void shouldReturnFalseWhenDeletingNonExistentCostumer() {
-            when(costumerRepository.existsById(99L)).thenReturn(false);
+            when(costumerRepository.findByCpfNumber(VALID_CPF_UNFORMATTED)).thenReturn(Optional.empty());
 
-            boolean result = manageInventoryUseCase.deleteCostumer(99L);
+            boolean result = manageInventoryUseCase.deleteCostumer(VALID_CPF_UNFORMATTED);
 
             assertThat(result).isFalse();
-            verify(costumerRepository, never()).deleteById(99L);
+            verify(costumerRepository).findByCpfNumber(VALID_CPF_UNFORMATTED);
+            verify(costumerRepository, never()).delete(any());
         }
     }
 
@@ -143,26 +169,27 @@ class ManageInventoryUseCaseTest {
     class FindCostumer {
 
         @Test
-        @DisplayName("Should find costumer successfully")
-        void shouldFindExistingCostumer() {
+        @DisplayName("Should find costumer by CPF successfully")
+        void shouldFindExistingCostumerByCpf() {
             var entity = new CostumerEntity(1L, "Jane Doe", VALID_CPF_EMBEDDABLE);
             var costumer = new Costumer("Jane Doe", VALID_CPF_OBJECT);
 
-            when(costumerRepository.findById(1L)).thenReturn(Optional.of(entity));
+            when(costumerRepository.findByCpfNumber(VALID_CPF_UNFORMATTED)).thenReturn(Optional.of(entity));
             when(costumerMapper.toDomain(entity)).thenReturn(costumer);
 
-            Optional<Costumer> result = manageInventoryUseCase.findCostumerById(1L);
+            Optional<Costumer> result = manageInventoryUseCase.findCostumerByCpf(VALID_CPF_STRING);
 
             assertThat(result).isPresent();
             assertThat(result.get().name()).isEqualTo("Jane Doe");
+            assertThat(result.get().cpf().format()).isEqualTo(VALID_CPF_STRING);
         }
 
         @Test
-        @DisplayName("Should return empty when finding a non-existent costumer")
-        void shouldReturnEmptyWhenFindingNonExistentCostumer() {
-            when(costumerRepository.findById(99L)).thenReturn(Optional.empty());
+        @DisplayName("Should return empty when finding a non-existent costumer by CPF")
+        void shouldReturnEmptyWhenFindingNonExistentCostumerByCpf() {
+            when(costumerRepository.findByCpfNumber(VALID_CPF_UNFORMATTED)).thenReturn(Optional.empty());
 
-            Optional<Costumer> result = manageInventoryUseCase.findCostumerById(99L);
+            Optional<Costumer> result = manageInventoryUseCase.findCostumerByCpf(VALID_CPF_UNFORMATTED);
 
             assertThat(result).isNotPresent();
         }
@@ -171,7 +198,7 @@ class ManageInventoryUseCaseTest {
         @DisplayName("Should return all costumers successfully")
         void shouldReturnAllCostumersSuccessfully() {
             var entity1 = new CostumerEntity(1L, "John Doe", VALID_CPF_EMBEDDABLE);
-            var entity2 = new CostumerEntity(2L, "Jane Doe", new CPFEmbeddable("520.819.778-26"));
+            var entity2 = new CostumerEntity(2L, "Jane Doe", new CPFEmbeddable("52081977826"));
             var costumer1 = new Costumer("John Doe", VALID_CPF_OBJECT);
             var costumer2 = new Costumer("Jane Doe", CPF.of("520.819.778-26"));
 
