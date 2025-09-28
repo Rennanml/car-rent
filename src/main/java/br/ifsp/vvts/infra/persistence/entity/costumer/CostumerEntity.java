@@ -19,7 +19,7 @@ public class CostumerEntity {
     private String name;
 
     @Embedded
-    @AttributeOverride(name = "number", column = @Column(name = "cpf_number"))
+    @AttributeOverride(name = "number", column = @Column(name = "cpf_number", unique = true, nullable = false))
     private CPFEmbeddable cpf;
 
     /**
