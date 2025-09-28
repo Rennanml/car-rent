@@ -1,11 +1,11 @@
 package br.ifsp.vvts.domain.useCases;
 
-import br.ifsp.vvts.domain.model.costumer.CPF;
-import br.ifsp.vvts.domain.model.costumer.Costumer;
+import br.ifsp.vvts.domain.model.customer.CPF;
+import br.ifsp.vvts.domain.model.customer.Customer;
 import br.ifsp.vvts.exception.EntityAlreadyExistsException;
-import br.ifsp.vvts.infra.persistence.entity.costumer.CostumerEntity;
-import br.ifsp.vvts.infra.persistence.mapper.CostumerMapper;
-import br.ifsp.vvts.infra.persistence.repository.CostumerRepository;
+import br.ifsp.vvts.infra.persistence.entity.customer.CustomerEntity;
+import br.ifsp.vvts.infra.persistence.mapper.CustomerMapper;
+import br.ifsp.vvts.infra.persistence.repository.CustomerRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,65 +17,65 @@ import java.util.stream.Collectors;
 @Service
 public class ManageInventoryUseCase {
 
-    private final CostumerRepository costumerRepository;
-    private final CostumerMapper costumerMapper;
+    private final CustomerRepository customerRepository;
+    private final CustomerMapper customerMapper;
 
-    public ManageInventoryUseCase(CostumerRepository costumerRepository, CostumerMapper costumerMapper) {
-        this.costumerRepository = costumerRepository;
-        this.costumerMapper = costumerMapper;
+    public ManageInventoryUseCase(CustomerRepository customerRepository, CustomerMapper customerMapper) {
+        this.customerRepository = customerRepository;
+        this.customerMapper = customerMapper;
     }
 
     @Transactional
     @Modifying
-    public Costumer createCostumer(String name, String cpfNumber) {
+    public Customer createCustomer(String name, String cpfNumber) {
         CPF cpf = CPF.of(cpfNumber);
-        Costumer costumerToSave = new Costumer(name, cpf);
+        Customer customerToSave = new Customer(name, cpf);
 
-        costumerRepository.findByCpfNumber(cpf.unformat()).ifPresent(entity -> {
-            throw new EntityAlreadyExistsException("A costumer with this CPF already exists.");
+        customerRepository.findByCpfNumber(cpf.unformat()).ifPresent(entity -> {
+            throw new EntityAlreadyExistsException("A customer with this CPF already exists.");
         });
 
-        CostumerEntity entity = costumerMapper.toEntity(costumerToSave);
-        CostumerEntity savedEntity = costumerRepository.save(entity);
+        CustomerEntity entity = customerMapper.toEntity(customerToSave);
+        CustomerEntity savedEntity = customerRepository.save(entity);
 
-        return costumerMapper.toDomain(savedEntity);
+        return customerMapper.toDomain(savedEntity);
     }
 
     @Transactional
     @Modifying
-    public Optional<Costumer> updateCostumer(String costumerCpf, String newName) {
-        var cpf = CPF.of(costumerCpf);
-        return costumerRepository.findByCpfNumber(cpf.unformat())
+    public Optional<Customer> updateCustomer(String customerCpf, String newName) {
+        var cpf = CPF.of(customerCpf);
+        return customerRepository.findByCpfNumber(cpf.unformat())
                 .map(entity -> {
-                    Costumer updatedDomainCostumer = new Costumer(newName, CPF.of(entity.getCpf().getNumber()));
-                    entity.setName(updatedDomainCostumer.name());
-                    CostumerEntity savedEntity = costumerRepository.save(entity);
-                    return costumerMapper.toDomain(savedEntity);
+                    Customer updatedDomainCustomer = new Customer(newName, CPF.of(entity.getCpf().getNumber()));
+                    entity.setName(updatedDomainCustomer.name());
+                    CustomerEntity savedEntity = customerRepository.save(entity);
+                    return customerMapper.toDomain(savedEntity);
                 });
     }
 
     @Transactional
     @Modifying
-    public boolean deleteCostumer(String cpfNumber) {
+    public boolean deleteCustomer(String cpfNumber) {
         CPF cpf = CPF.of(cpfNumber);
-        return costumerRepository.findByCpfNumber(cpf.unformat())
+        return customerRepository.findByCpfNumber(cpf.unformat())
                 .map(entity -> {
-                    costumerRepository.delete(entity);
+                    customerRepository.delete(entity);
                     return true;
                 }).orElse(false);
     }
 
     @Transactional
-    public Optional<Costumer> findCostumerByCpf(String cpfNumber) {
-        CPF cpf = CPF.of(cpfNumber); // Valida o CPF
-        return costumerRepository.findByCpfNumber(cpf.unformat())
-                .map(costumerMapper::toDomain);
+    public Optional<Customer> findCustomerByCpf(String cpfNumber) {
+        CPF cpf = CPF.of(cpfNumber);
+        return customerRepository.findByCpfNumber(cpf.unformat())
+                .map(customerMapper::toDomain);
     }
 
     @Transactional
-    public List<Costumer> getAllCostumers() {
-        return costumerRepository.findAll().stream()
-                .map(costumerMapper::toDomain)
+    public List<Customer> getAllCustomers() {
+        return customerRepository.findAll().stream()
+                .map(customerMapper::toDomain)
                 .collect(Collectors.toList());
     }
 }

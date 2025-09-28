@@ -1,4 +1,4 @@
-package br.ifsp.vvts.domain.model.costumer;
+package br.ifsp.vvts.domain.model.customer;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 

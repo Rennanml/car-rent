@@ -1,5 +1,5 @@
 
-package br.ifsp.vvts.infra.persistence.entity.costumer;
+package br.ifsp.vvts.infra.persistence.entity.customer;
 
 import jakarta.persistence.Embeddable;
 

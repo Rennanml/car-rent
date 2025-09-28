@@ -1,8 +1,8 @@
 package br.ifsp.vvts.controller;
 
-import br.ifsp.vvts.domain.dto.CreateCostumerRequest;
-import br.ifsp.vvts.domain.dto.UpdateCostumerRequest;
-import br.ifsp.vvts.domain.model.costumer.Costumer;
+import br.ifsp.vvts.domain.dto.CreateCustomerRequest;
+import br.ifsp.vvts.domain.dto.UpdateCustomerRequest;
+import br.ifsp.vvts.domain.model.customer.Customer;
 import br.ifsp.vvts.domain.useCases.ManageInventoryUseCase;
 import br.ifsp.vvts.security.auth.AuthenticationInfoService;
 import org.springframework.http.ResponseEntity;
@@ -14,48 +14,48 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/customers")
-public class CostumerController {
+public class CustomerController {
 
     private final ManageInventoryUseCase manageInventoryUseCase;
     private final AuthenticationInfoService authService;
 
-    public CostumerController(ManageInventoryUseCase manageInventoryUseCase, AuthenticationInfoService authService) {
+    public CustomerController(ManageInventoryUseCase manageInventoryUseCase, AuthenticationInfoService authService) {
         this.manageInventoryUseCase = manageInventoryUseCase;
         this.authService = authService;
     }
 
     @PostMapping
-    public ResponseEntity<Costumer> create(@RequestBody CreateCostumerRequest request, UriComponentsBuilder uriBuilder) {
+    public ResponseEntity<Customer> create(@RequestBody CreateCustomerRequest request, UriComponentsBuilder uriBuilder) {
         authService.getAuthenticatedUserId();
 
-        Costumer createdCostumer = manageInventoryUseCase.createCostumer(request.name(), request.cpf());
+        Customer createdCustomer = manageInventoryUseCase.createCustomer(request.name(), request.cpf());
 
-        URI location = uriBuilder.path("/api/v1/customers/{cpf}").buildAndExpand(createdCostumer.cpf().format()).toUri();
-        return ResponseEntity.created(location).body(createdCostumer);
+        URI location = uriBuilder.path("/api/v1/customers/{cpf}").buildAndExpand(createdCustomer.cpf().format()).toUri();
+        return ResponseEntity.created(location).body(createdCustomer);
     }
 
     @GetMapping
-    public ResponseEntity<List<Costumer>> listAll() {
+    public ResponseEntity<List<Customer>> listAll() {
         authService.getAuthenticatedUserId();
 
-        List<Costumer> allCostumers = manageInventoryUseCase.getAllCostumers();
-        return ResponseEntity.ok(allCostumers);
+        List<Customer> allCustomers = manageInventoryUseCase.getAllCustomers();
+        return ResponseEntity.ok(allCustomers);
     }
 
     @GetMapping("/{cpf}")
-    public ResponseEntity<Costumer> findByCpf(@PathVariable String cpf) {
+    public ResponseEntity<Customer> findByCpf(@PathVariable String cpf) {
         authService.getAuthenticatedUserId();
 
-        return manageInventoryUseCase.findCostumerByCpf(cpf)
+        return manageInventoryUseCase.findCustomerByCpf(cpf)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PutMapping("/{cpf}")
-    public ResponseEntity<Costumer> update(@PathVariable String cpf, @RequestBody UpdateCostumerRequest request) {
+    public ResponseEntity<Customer> update(@PathVariable String cpf, @RequestBody UpdateCustomerRequest request) {
         authService.getAuthenticatedUserId();
 
-        return manageInventoryUseCase.updateCostumer(cpf, request.name())
+        return manageInventoryUseCase.updateCustomer(cpf, request.name())
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -64,7 +64,7 @@ public class CostumerController {
     public ResponseEntity<Void> delete(@PathVariable String cpf) {
         authService.getAuthenticatedUserId();
 
-        boolean wasDeleted = manageInventoryUseCase.deleteCostumer(cpf);
+        boolean wasDeleted = manageInventoryUseCase.deleteCustomer(cpf);
 
         if (wasDeleted) {
             return ResponseEntity.noContent().build();

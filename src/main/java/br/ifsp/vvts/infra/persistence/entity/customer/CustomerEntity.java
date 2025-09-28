@@ -1,4 +1,4 @@
-package br.ifsp.vvts.infra.persistence.entity.costumer;
+package br.ifsp.vvts.infra.persistence.entity.customer;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -9,8 +9,8 @@ import java.util.Objects;
 @Getter
 @Setter
 @Entity
-@Table(name = "costumer")
-public class CostumerEntity {
+@Table(name = "customer")
+public class CustomerEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,10 +26,10 @@ public class CostumerEntity {
      * @deprecated Construtor exigido pelo JPA. Não utilize.
      */
     @Deprecated
-    public CostumerEntity() {
+    public CustomerEntity() {
     }
 
-    public CostumerEntity(Long id, String name, CPFEmbeddable cpf) {
+    public CustomerEntity(Long id, String name, CPFEmbeddable cpf) {
         this.id = id;
         this.name = name;
         this.cpf = cpf;
@@ -39,7 +39,7 @@ public class CostumerEntity {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        CostumerEntity that = (CostumerEntity) o;
+        CustomerEntity that = (CustomerEntity) o;
         return Objects.equals(id, that.id);
     }
 

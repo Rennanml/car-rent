@@ -1,8 +1,9 @@
 package br.ifsp.vvts.domain.model;
 
-import br.ifsp.vvts.domain.model.costumer.CPF;
+import br.ifsp.vvts.domain.model.customer.CPF;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -21,6 +22,8 @@ class CPFTest {
                 "12345678909",
                 "123.456.789-09"
         })
+        @Tag("UnitTest")
+        @Tag("TDD")
         public void shouldCreateAValidCPF(String rawCpf) {
             CPF cpf = CPF.of(rawCpf);
             assertThat(cpf.unformat()).isEqualTo("12345678909");
@@ -29,6 +32,8 @@ class CPFTest {
 
         @Test
         @DisplayName("Should create a present Optional<CPF> using tryOf()")
+        @Tag("UnitTest")
+        @Tag("TDD")
         void shouldCreateAValidCPFUsingTryOf() {
             Optional<CPF> maybeCpf = CPF.tryOf("12345678909");
             assertThat(maybeCpf)
@@ -52,6 +57,8 @@ class CPFTest {
                 "5299822472599",
                 "529.982.247-2X"
         })
+        @Tag("UnitTest")
+        @Tag("TDD")
         void shouldThrowIllegalArgumentExceptionWhenCPFIsInvalid(String rawCpf) {
             assertThatIllegalArgumentException().isThrownBy(() -> CPF.of(rawCpf));
         }
@@ -65,6 +72,8 @@ class CPFTest {
                 "5299822472599",
                 "529.982.247-2X"
         })
+        @Tag("UnitTest")
+        @Tag("TDD")
         void shouldReturnOptionEmptyForInvalidCPF(String rawCpf) {
             Optional<CPF> maybeCpf = CPF.tryOf(rawCpf);
             assertThat(maybeCpf).isEmpty();
@@ -77,6 +86,8 @@ class CPFTest {
 
         @Test
         @DisplayName("Two identical CPFs (with and without formatting) should be equal")
+        @Tag("UnitTest")
+        @Tag("TDD")
         void shouldCompareEqualCPF() {
             CPF c1 = CPF.of("52998224725");
             CPF c2 = CPF.of("529.982.247-25");
@@ -87,6 +98,8 @@ class CPFTest {
 
         @Test
         @DisplayName("Should Compare Different CPF")
+        @Tag("UnitTest")
+        @Tag("TDD")
         void shouldCompareDifferentCPF() {
             CPF c1 = CPF.of("52998224725");
             CPF c2 = CPF.of("39053344705");
@@ -96,6 +109,8 @@ class CPFTest {
 
         @Test
         @DisplayName("Should Return Formated CPF on toString()")
+        @Tag("UnitTest")
+        @Tag("TDD")
         void shouldReturnFormatedCPFOnToString() {
             CPF cpf = CPF.of("52998224725");
 

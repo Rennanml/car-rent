@@ -1,14 +1,15 @@
 package br.ifsp.vvts.domain.useCases;
 
-import br.ifsp.vvts.domain.model.costumer.CPF;
-import br.ifsp.vvts.domain.model.costumer.Costumer;
+import br.ifsp.vvts.domain.model.customer.CPF;
+import br.ifsp.vvts.domain.model.customer.Customer;
 import br.ifsp.vvts.exception.EntityAlreadyExistsException;
-import br.ifsp.vvts.infra.persistence.entity.costumer.CPFEmbeddable;
-import br.ifsp.vvts.infra.persistence.entity.costumer.CostumerEntity;
-import br.ifsp.vvts.infra.persistence.mapper.CostumerMapper;
-import br.ifsp.vvts.infra.persistence.repository.CostumerRepository;
+import br.ifsp.vvts.infra.persistence.entity.customer.CPFEmbeddable;
+import br.ifsp.vvts.infra.persistence.entity.customer.CustomerEntity;
+import br.ifsp.vvts.infra.persistence.mapper.CustomerMapper;
+import br.ifsp.vvts.infra.persistence.repository.CustomerRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -26,10 +27,10 @@ import static org.mockito.Mockito.*;
 class ManageInventoryUseCaseTest {
 
     @Mock
-    private CostumerRepository costumerRepository;
+    private CustomerRepository customerRepository;
 
     @Mock
-    private CostumerMapper costumerMapper;
+    private CustomerMapper customerMapper;
 
     @InjectMocks
     private ManageInventoryUseCase manageInventoryUseCase;
@@ -43,141 +44,161 @@ class ManageInventoryUseCaseTest {
 
 
     @Nested
-    @DisplayName("Create Costumer Cases")
-    class CreateCostumer {
+    @DisplayName("Create Customer Cases")
+    class CreateCustomer {
 
         @Test
-        @DisplayName("Should create costumer successfully")
-        void shouldCreateCostumerSuccessfully() {
-            var costumer = new Costumer("John Doe", VALID_CPF_OBJECT);
-            var entity = new CostumerEntity(null, "John Doe", VALID_CPF_EMBEDDABLE);
-            var savedEntity = new CostumerEntity(1L, "John Doe", VALID_CPF_EMBEDDABLE);
+        @DisplayName("Should create customer successfully")
+        @Tag("UnitTest")
+        @Tag("TDD")
+        void shouldCreateCustomerSuccessfully() {
+            var customer = new Customer("John Doe", VALID_CPF_OBJECT);
+            var entity = new CustomerEntity(null, "John Doe", VALID_CPF_EMBEDDABLE);
+            var savedEntity = new CustomerEntity(1L, "John Doe", VALID_CPF_EMBEDDABLE);
 
-            when(costumerRepository.findByCpfNumber(VALID_CPF_UNFORMATTED)).thenReturn(Optional.empty());
-            when(costumerMapper.toEntity(any(Costumer.class))).thenReturn(entity);
-            when(costumerRepository.save(entity)).thenReturn(savedEntity);
-            when(costumerMapper.toDomain(savedEntity)).thenReturn(costumer);
+            when(customerRepository.findByCpfNumber(VALID_CPF_UNFORMATTED)).thenReturn(Optional.empty());
+            when(customerMapper.toEntity(any(Customer.class))).thenReturn(entity);
+            when(customerRepository.save(entity)).thenReturn(savedEntity);
+            when(customerMapper.toDomain(savedEntity)).thenReturn(customer);
 
-            Costumer result = manageInventoryUseCase.createCostumer("John Doe", VALID_CPF_STRING);
+            Customer result = manageInventoryUseCase.createCustomer("John Doe", VALID_CPF_STRING);
 
             assertThat(result).isNotNull();
             assertThat(result.name()).isEqualTo("John Doe");
-            verify(costumerRepository).save(entity);
+            verify(customerRepository).save(entity);
         }
 
         @Test
-        @DisplayName("Should throw exception when creating costumer with invalid CPF")
+        @DisplayName("Should throw exception when creating customer with invalid CPF")
+        @Tag("UnitTest")
+        @Tag("TDD")
         void shouldThrowExceptionWhenCreatingWithInvalidCPF() {
-            assertThatThrownBy(() -> manageInventoryUseCase.createCostumer("John Doe", INVALID_CPF_STRING))
+            assertThatThrownBy(() -> manageInventoryUseCase.createCustomer("John Doe", INVALID_CPF_STRING))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
         @Test
-        @DisplayName("Should throw exception when creating costumer with null CPF")
+        @DisplayName("Should throw exception when creating customer with null CPF")
+        @Tag("UnitTest")
+        @Tag("TDD")
         void shouldThrowExceptionWhenCreatingWithNullCPF() {
-            assertThatThrownBy(() -> manageInventoryUseCase.createCostumer("John Doe", null))
+            assertThatThrownBy(() -> manageInventoryUseCase.createCustomer("John Doe", null))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
         @Test
-        @DisplayName("Should throw exception when creating costumer with a existing CPF")
+        @DisplayName("Should throw exception when creating customer with a existing CPF")
+        @Tag("UnitTest")
+        @Tag("TDD")
         void shouldThrowExceptionWhenCreatingWithExistingCPF() {
-            var entity = new CostumerEntity(1L, "John Doe", VALID_CPF_EMBEDDABLE);
-            when(costumerRepository.findByCpfNumber(VALID_CPF_UNFORMATTED)).thenReturn(Optional.of(entity));
-            assertThatThrownBy(() -> manageInventoryUseCase.createCostumer("John Doe", VALID_CPF_STRING))
+            var entity = new CustomerEntity(1L, "John Doe", VALID_CPF_EMBEDDABLE);
+            when(customerRepository.findByCpfNumber(VALID_CPF_UNFORMATTED)).thenReturn(Optional.of(entity));
+            assertThatThrownBy(() -> manageInventoryUseCase.createCustomer("John Doe", VALID_CPF_STRING))
                     .isInstanceOf(EntityAlreadyExistsException.class);
         }
     }
 
     @Nested
-    @DisplayName("Update Costumer Cases")
-    class UpdateCostumer {
+    @DisplayName("Update Customer Cases")
+    class UpdateCustomer {
 
         @Test
-        @DisplayName("Should update costumer successfully")
-        void shouldUpdateCostumerSuccessfully() {
-            var existingEntity = new CostumerEntity(1L, "John Doe", VALID_CPF_EMBEDDABLE);
-            var updatedCostumer = new Costumer("John Updated", VALID_CPF_OBJECT);
+        @DisplayName("Should update customer successfully")
+        @Tag("UnitTest")
+        @Tag("TDD")
+        void shouldUpdateCustomerSuccessfully() {
+            var existingEntity = new CustomerEntity(1L, "John Doe", VALID_CPF_EMBEDDABLE);
+            var updatedCustomer = new Customer("John Updated", VALID_CPF_OBJECT);
 
-            when(costumerRepository.findByCpfNumber(VALID_CPF_UNFORMATTED)).thenReturn(Optional.of(existingEntity));
-            when(costumerRepository.save(any(CostumerEntity.class))).thenReturn(existingEntity);
-            when(costumerMapper.toDomain(existingEntity)).thenReturn(updatedCostumer);
+            when(customerRepository.findByCpfNumber(VALID_CPF_UNFORMATTED)).thenReturn(Optional.of(existingEntity));
+            when(customerRepository.save(any(CustomerEntity.class))).thenReturn(existingEntity);
+            when(customerMapper.toDomain(existingEntity)).thenReturn(updatedCustomer);
 
-            Optional<Costumer> result = manageInventoryUseCase.updateCostumer(VALID_CPF_STRING, "John Updated");
+            Optional<Customer> result = manageInventoryUseCase.updateCustomer(VALID_CPF_STRING, "John Updated");
 
             assertThat(result).isPresent();
             assertThat(result.get().name()).isEqualTo("John Updated");
-            verify(costumerRepository).save(existingEntity);
+            verify(customerRepository).save(existingEntity);
         }
 
         @Test
         @DisplayName("Should throw exception when updating with invalid information")
+        @Tag("UnitTest")
+        @Tag("TDD")
         void shouldThrowExceptionWhenUpdatingWithInvalidInfo() {
-            var existingEntity = new CostumerEntity(1L, "John Doe", VALID_CPF_EMBEDDABLE);
-            when(costumerRepository.findByCpfNumber(VALID_CPF_UNFORMATTED)).thenReturn(Optional.of(existingEntity));
+            var existingEntity = new CustomerEntity(1L, "John Doe", VALID_CPF_EMBEDDABLE);
+            when(customerRepository.findByCpfNumber(VALID_CPF_UNFORMATTED)).thenReturn(Optional.of(existingEntity));
 
-            assertThatThrownBy(() -> manageInventoryUseCase.updateCostumer(VALID_CPF_STRING, ""))
+            assertThatThrownBy(() -> manageInventoryUseCase.updateCustomer(VALID_CPF_STRING, ""))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage("Costumer name cannot be blank");
+                    .hasMessage("Customer name cannot be blank");
         }
 
         @Test
-        @DisplayName("Should return empty when updating a non-existent costumer")
-        void shouldReturnEmptyWhenUpdatingNonExistentCostumer() {
-            when(costumerRepository.findByCpfNumber(VALID_CPF_UNFORMATTED)).thenReturn(Optional.empty());
+        @DisplayName("Should return empty when updating a non-existent customer")
+        @Tag("UnitTest")
+        @Tag("TDD")
+        void shouldReturnEmptyWhenUpdatingNonExistentCustomer() {
+            when(customerRepository.findByCpfNumber(VALID_CPF_UNFORMATTED)).thenReturn(Optional.empty());
 
-            Optional<Costumer> result = manageInventoryUseCase.updateCostumer(VALID_CPF_STRING, "Any Name");
+            Optional<Customer> result = manageInventoryUseCase.updateCustomer(VALID_CPF_STRING, "Any Name");
 
             assertThat(result).isNotPresent();
-            verify(costumerRepository, never()).save(any());
+            verify(customerRepository, never()).save(any());
         }
     }
 
     @Nested
-    @DisplayName("Delete Costumer Cases")
-    class DeleteCostumer {
+    @DisplayName("Delete Customer Cases")
+    class DeleteCustomer {
 
         @Test
-        @DisplayName("Should delete costumer successfully")
-        void shouldDeleteExistingCostumer() {
-            var entityToDelete = new CostumerEntity(1L, "John Doe", VALID_CPF_EMBEDDABLE);
-            when(costumerRepository.findByCpfNumber(VALID_CPF_UNFORMATTED)).thenReturn(Optional.of(entityToDelete));
-            doNothing().when(costumerRepository).delete(entityToDelete);
+        @DisplayName("Should delete customer successfully")
+        @Tag("UnitTest")
+        @Tag("TDD")
+        void shouldDeleteExistingCustomer() {
+            var entityToDelete = new CustomerEntity(1L, "John Doe", VALID_CPF_EMBEDDABLE);
+            when(customerRepository.findByCpfNumber(VALID_CPF_UNFORMATTED)).thenReturn(Optional.of(entityToDelete));
+            doNothing().when(customerRepository).delete(entityToDelete);
 
-            boolean result = manageInventoryUseCase.deleteCostumer(VALID_CPF_STRING);
+            boolean result = manageInventoryUseCase.deleteCustomer(VALID_CPF_STRING);
 
             assertThat(result).isTrue();
-            verify(costumerRepository).findByCpfNumber(VALID_CPF_UNFORMATTED);
-            verify(costumerRepository).delete(entityToDelete);
+            verify(customerRepository).findByCpfNumber(VALID_CPF_UNFORMATTED);
+            verify(customerRepository).delete(entityToDelete);
         }
 
         @Test
-        @DisplayName("Should return false when deleting a non-existent costumer")
-        void shouldReturnFalseWhenDeletingNonExistentCostumer() {
-            when(costumerRepository.findByCpfNumber(VALID_CPF_UNFORMATTED)).thenReturn(Optional.empty());
+        @DisplayName("Should return false when deleting a non-existent customer")
+        @Tag("UnitTest")
+        @Tag("TDD")
+        void shouldReturnFalseWhenDeletingNonExistentCustomer() {
+            when(customerRepository.findByCpfNumber(VALID_CPF_UNFORMATTED)).thenReturn(Optional.empty());
 
-            boolean result = manageInventoryUseCase.deleteCostumer(VALID_CPF_UNFORMATTED);
+            boolean result = manageInventoryUseCase.deleteCustomer(VALID_CPF_UNFORMATTED);
 
             assertThat(result).isFalse();
-            verify(costumerRepository).findByCpfNumber(VALID_CPF_UNFORMATTED);
-            verify(costumerRepository, never()).delete(any());
+            verify(customerRepository).findByCpfNumber(VALID_CPF_UNFORMATTED);
+            verify(customerRepository, never()).delete(any());
         }
     }
 
     @Nested
-    @DisplayName("Find Costumer Cases")
-    class FindCostumer {
+    @DisplayName("Find Customer Cases")
+    class FindCustomer {
 
         @Test
-        @DisplayName("Should find costumer by CPF successfully")
-        void shouldFindExistingCostumerByCpf() {
-            var entity = new CostumerEntity(1L, "Jane Doe", VALID_CPF_EMBEDDABLE);
-            var costumer = new Costumer("Jane Doe", VALID_CPF_OBJECT);
+        @DisplayName("Should find customer by CPF successfully")
+        @Tag("UnitTest")
+        @Tag("TDD")
+        void shouldFindExistingCustomerByCpf() {
+            var entity = new CustomerEntity(1L, "Jane Doe", VALID_CPF_EMBEDDABLE);
+            var customer = new Customer("Jane Doe", VALID_CPF_OBJECT);
 
-            when(costumerRepository.findByCpfNumber(VALID_CPF_UNFORMATTED)).thenReturn(Optional.of(entity));
-            when(costumerMapper.toDomain(entity)).thenReturn(costumer);
+            when(customerRepository.findByCpfNumber(VALID_CPF_UNFORMATTED)).thenReturn(Optional.of(entity));
+            when(customerMapper.toDomain(entity)).thenReturn(customer);
 
-            Optional<Costumer> result = manageInventoryUseCase.findCostumerByCpf(VALID_CPF_STRING);
+            Optional<Customer> result = manageInventoryUseCase.findCustomerByCpf(VALID_CPF_STRING);
 
             assertThat(result).isPresent();
             assertThat(result.get().name()).isEqualTo("Jane Doe");
@@ -185,51 +206,57 @@ class ManageInventoryUseCaseTest {
         }
 
         @Test
-        @DisplayName("Should return empty when finding a non-existent costumer by CPF")
-        void shouldReturnEmptyWhenFindingNonExistentCostumerByCpf() {
-            when(costumerRepository.findByCpfNumber(VALID_CPF_UNFORMATTED)).thenReturn(Optional.empty());
+        @DisplayName("Should return empty when finding a non-existent customer by CPF")
+        @Tag("UnitTest")
+        @Tag("TDD")
+        void shouldReturnEmptyWhenFindingNonExistentCustomerByCpf() {
+            when(customerRepository.findByCpfNumber(VALID_CPF_UNFORMATTED)).thenReturn(Optional.empty());
 
-            Optional<Costumer> result = manageInventoryUseCase.findCostumerByCpf(VALID_CPF_UNFORMATTED);
+            Optional<Customer> result = manageInventoryUseCase.findCustomerByCpf(VALID_CPF_UNFORMATTED);
 
             assertThat(result).isNotPresent();
         }
 
         @Test
-        @DisplayName("Should return all costumers successfully")
-        void shouldReturnAllCostumersSuccessfully() {
-            var entity1 = new CostumerEntity(1L, "John Doe", VALID_CPF_EMBEDDABLE);
-            var entity2 = new CostumerEntity(2L, "Jane Doe", new CPFEmbeddable("52081977826"));
-            var costumer1 = new Costumer("John Doe", VALID_CPF_OBJECT);
-            var costumer2 = new Costumer("Jane Doe", CPF.of("520.819.778-26"));
+        @DisplayName("Should return all customers successfully")
+        @Tag("UnitTest")
+        @Tag("TDD")
+        void shouldReturnAllCustomersSuccessfully() {
+            var entity1 = new CustomerEntity(1L, "John Doe", VALID_CPF_EMBEDDABLE);
+            var entity2 = new CustomerEntity(2L, "Jane Doe", new CPFEmbeddable("52081977826"));
+            var customer1 = new Customer("John Doe", VALID_CPF_OBJECT);
+            var customer2 = new Customer("Jane Doe", CPF.of("520.819.778-26"));
 
-            when(costumerRepository.findAll()).thenReturn(List.of(entity1, entity2));
-            when(costumerMapper.toDomain(entity1)).thenReturn(costumer1);
-            when(costumerMapper.toDomain(entity2)).thenReturn(costumer2);
+            when(customerRepository.findAll()).thenReturn(List.of(entity1, entity2));
+            when(customerMapper.toDomain(entity1)).thenReturn(customer1);
+            when(customerMapper.toDomain(entity2)).thenReturn(customer2);
 
-            List<Costumer> result = manageInventoryUseCase.getAllCostumers();
+            List<Customer> result = manageInventoryUseCase.getAllCustomers();
 
             assertThat(result)
                     .isNotNull()
                     .hasSize(2)
-                    .containsExactlyInAnyOrder(costumer1, costumer2);
+                    .containsExactlyInAnyOrder(customer1, customer2);
 
-            verify(costumerRepository).findAll();
-            verify(costumerMapper, times(2)).toDomain(any(CostumerEntity.class));
+            verify(customerRepository).findAll();
+            verify(customerMapper, times(2)).toDomain(any(CustomerEntity.class));
         }
 
         @Test
-        @DisplayName("Should return an empty list when no costumers exist")
-        void shouldReturnEmptyListWhenNoCostumersExist() {
-            when(costumerRepository.findAll()).thenReturn(List.of());
+        @DisplayName("Should return an empty list when no customers exist")
+        @Tag("UnitTest")
+        @Tag("TDD")
+        void shouldReturnEmptyListWhenNoCustomersExist() {
+            when(customerRepository.findAll()).thenReturn(List.of());
 
-            List<Costumer> result = manageInventoryUseCase.getAllCostumers();
+            List<Customer> result = manageInventoryUseCase.getAllCustomers();
 
             assertThat(result)
                     .isNotNull()
                     .isEmpty();
 
-            verify(costumerRepository).findAll();
-            verify(costumerMapper, never()).toDomain(any());
+            verify(customerRepository).findAll();
+            verify(customerMapper, never()).toDomain(any());
         }
     }
 }
