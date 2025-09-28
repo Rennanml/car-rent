@@ -1,5 +1,7 @@
 package br.ifsp.vvts.domain.model.costumer;
 
+import com.fasterxml.jackson.annotation.JsonValue;
+
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.Objects;
@@ -35,6 +37,7 @@ public class CPF implements Serializable {
         return digits;
     }
 
+    @JsonValue
     public String format() {
         return String.format("%s.%s.%s-%s",
                 digits.substring(0, 3),
