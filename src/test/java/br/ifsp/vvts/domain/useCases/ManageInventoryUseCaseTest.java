@@ -1,12 +1,17 @@
 package br.ifsp.vvts.domain.useCases;
 
 import br.ifsp.vvts.domain.model.car.Car;
+import br.ifsp.vvts.domain.model.car.LicensePlate;
 import br.ifsp.vvts.domain.model.customer.CPF;
 import br.ifsp.vvts.domain.model.customer.Customer;
 import br.ifsp.vvts.exception.EntityAlreadyExistsException;
+import br.ifsp.vvts.infra.persistence.entity.car.CarEntity;
+import br.ifsp.vvts.infra.persistence.entity.car.LicensePlateEmbeddable;
 import br.ifsp.vvts.infra.persistence.entity.customer.CPFEmbeddable;
 import br.ifsp.vvts.infra.persistence.entity.customer.CustomerEntity;
+import br.ifsp.vvts.infra.persistence.mapper.CarMapper;
 import br.ifsp.vvts.infra.persistence.mapper.CustomerMapper;
+import br.ifsp.vvts.infra.persistence.repository.CarRepository;
 import br.ifsp.vvts.infra.persistence.repository.CustomerRepository;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
