@@ -1,5 +1,7 @@
 package br.ifsp.vvts.domain.model.car;
 
+import com.fasterxml.jackson.annotation.JsonValue;
+
 import java.util.Objects;
 import java.util.regex.Pattern;
 
@@ -19,6 +21,7 @@ public final class LicensePlate {
         return new LicensePlate(value);
     }
 
+    @JsonValue
     public String value() {
         return value;
     }
