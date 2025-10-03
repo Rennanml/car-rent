@@ -6,13 +6,13 @@ import java.util.Objects;
 
 public record RentalPeriod(LocalDate startDate, LocalDate endDate) {
     public RentalPeriod {
-        Objects.requireNonNull(startDate, "Data de início obrigatória");
-        Objects.requireNonNull(endDate, "Data de fim obrigatória");
+        Objects.requireNonNull(startDate, "Mandatory start date.");
+        Objects.requireNonNull(endDate, "Mandatory end date.");
         if (startDate.isAfter(endDate) || startDate.isEqual(endDate)) {
-            throw new IllegalArgumentException("Período de aluguel inválido: a data final deve ser após a data inicial.");
+            throw new IllegalArgumentException("Invalid rental period: End date must be after start date.");
         }
         if (ChronoUnit.DAYS.between(startDate, endDate) > 60) {
-            throw new IllegalArgumentException("Período de aluguel inválido: o intervalo não pode ser maior que 60 dias.");
+            throw new IllegalArgumentException("Invalid rental period: The interval cannot be longer than 60 days.");
         }
     }
 
