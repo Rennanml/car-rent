@@ -231,7 +231,6 @@ class CarRentUseCaseTest {
         @Tag("TDD")
         void shouldThrowExceptionWhenCarIsUnavailable() {
             when(customerRepository.findByCpfNumber(CPF.of(validCpf).unformat())).thenReturn(Optional.of(existingCustomer));
-            when(customerMapper.toDomain(existingCustomer)).thenReturn(customerDomain);
             when(carRepository.findByLicensePlate(LicensePlate.of(validPlate).value())).thenReturn(Optional.of(existingCar));
             when(carMapper.toDomain(existingCar)).thenReturn(carDomain);
             when(rentalRepository.existsByCarLicensePlateAndPeriodOverlaps(any(), any(), any())).thenReturn(true);
@@ -254,7 +253,6 @@ class CarRentUseCaseTest {
         @Tag("TDD")
         void shouldRegisterRentalSuccessfully() {
             when(customerRepository.findByCpfNumber(CPF.of(validCpf).unformat())).thenReturn(Optional.of(existingCustomer));
-            when(customerMapper.toDomain(existingCustomer)).thenReturn(customerDomain);
             when(carRepository.findByLicensePlate(LicensePlate.of(validPlate).value())).thenReturn(Optional.of(existingCar));
             when(carMapper.toDomain(existingCar)).thenReturn(carDomain);
             when(rentalRepository.existsByCarLicensePlateAndPeriodOverlaps(any(), any(), any())).thenReturn(false);
@@ -276,7 +274,6 @@ class CarRentUseCaseTest {
         @Tag("TDD")
         void shouldRegisterRentalWithoutDiscountsOrSurcharges() {
             when(customerRepository.findByCpfNumber(CPF.of(validCpf).unformat())).thenReturn(Optional.of(existingCustomer));
-            when(customerMapper.toDomain(existingCustomer)).thenReturn(customerDomain);
             when(carRepository.findByLicensePlate(LicensePlate.of(validPlate).value())).thenReturn(Optional.of(existingCar));
             when(carMapper.toDomain(existingCar)).thenReturn(carDomain);
             when(rentalRepository.existsByCarLicensePlateAndPeriodOverlaps(any(), any(), any())).thenReturn(false);
@@ -298,7 +295,6 @@ class CarRentUseCaseTest {
         void shouldApplyDiscountForPeriodBetween7And14Days() {
             LocalDate endDate = today.plusDays(8);
             when(customerRepository.findByCpfNumber(CPF.of(validCpf).unformat())).thenReturn(Optional.of(existingCustomer));
-            when(customerMapper.toDomain(existingCustomer)).thenReturn(customerDomain);
             when(carRepository.findByLicensePlate(LicensePlate.of(validPlate).value())).thenReturn(Optional.of(existingCar));
             when(carMapper.toDomain(existingCar)).thenReturn(carDomain);
             when(rentalRepository.existsByCarLicensePlateAndPeriodOverlaps(any(), any(), any())).thenReturn(false);
@@ -320,7 +316,6 @@ class CarRentUseCaseTest {
         void shouldApplyDiscountForPeriodOver15Days() {
             LocalDate endDate = today.plusDays(15);
             when(customerRepository.findByCpfNumber(CPF.of(validCpf).unformat())).thenReturn(Optional.of(existingCustomer));
-            when(customerMapper.toDomain(existingCustomer)).thenReturn(customerDomain);
             when(carRepository.findByLicensePlate(LicensePlate.of(validPlate).value())).thenReturn(Optional.of(existingCar));
             when(carMapper.toDomain(existingCar)).thenReturn(carDomain);
             when(rentalRepository.existsByCarLicensePlateAndPeriodOverlaps(any(), any(), any())).thenReturn(false);
@@ -343,7 +338,6 @@ class CarRentUseCaseTest {
             LocalDate startDate = LocalDate.of(2025, 10, 3);
             LocalDate endDate = LocalDate.of(2025, 10, 5);
             when(customerRepository.findByCpfNumber(CPF.of(validCpf).unformat())).thenReturn(Optional.of(existingCustomer));
-            when(customerMapper.toDomain(existingCustomer)).thenReturn(customerDomain);
             when(carRepository.findByLicensePlate(LicensePlate.of(validPlate).value())).thenReturn(Optional.of(existingCar));
             when(carMapper.toDomain(existingCar)).thenReturn(carDomain);
             when(rentalRepository.existsByCarLicensePlateAndPeriodOverlaps(any(), any(), any())).thenReturn(false);
@@ -365,7 +359,6 @@ class CarRentUseCaseTest {
         void shouldApplyInsuranceSurchargeWhenRequested() {
             LocalDate endDate = today.plusDays(1);
             when(customerRepository.findByCpfNumber(CPF.of(validCpf).unformat())).thenReturn(Optional.of(existingCustomer));
-            when(customerMapper.toDomain(existingCustomer)).thenReturn(customerDomain);
             when(carRepository.findByLicensePlate(LicensePlate.of(validPlate).value())).thenReturn(Optional.of(existingCar));
             when(carMapper.toDomain(existingCar)).thenReturn(carDomain);
             when(rentalRepository.existsByCarLicensePlateAndPeriodOverlaps(any(), any(), any())).thenReturn(false);
