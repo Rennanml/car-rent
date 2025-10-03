@@ -6,6 +6,7 @@ import br.ifsp.vvts.domain.model.customer.CPF;
 import br.ifsp.vvts.domain.model.customer.Customer;
 import br.ifsp.vvts.domain.model.rental.Rental;
 import br.ifsp.vvts.domain.model.rental.RentalPeriod;
+import br.ifsp.vvts.domain.model.rental.RentalStatus;
 import br.ifsp.vvts.exception.CarNotFoundException;
 import br.ifsp.vvts.exception.CarUnavailableException;
 import br.ifsp.vvts.exception.CustomerNotFoundException;
@@ -35,6 +36,9 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -53,6 +57,8 @@ class CarRentUseCaseTest {
     private CustomerMapper customerMapper;
     @Mock
     private CarMapper carMapper;
+    @Mock
+    private ManageRentalUseCase manageRentalUseCase;
 
     @InjectMocks
     private CarRentUseCase carRentUseCase;
@@ -66,10 +72,20 @@ class CarRentUseCaseTest {
     private final Customer customerDomain = new Customer("John Doe", CPF.of(validCpf));
     private final Car carDomain = new Car(LicensePlate.of(validPlate), "Nissan", "March", 100);
 
+    private Rental buildMockRental(BigDecimal totalPrice) {
+        Rental rental = new Rental();
+        rental.setId(1L);
+        rental.setCustomer(customerDomain);
+        rental.setCar(carDomain);
+        rental.setPeriod(new RentalPeriod(today, inFiveDays));
+        rental.setTotalPrice(totalPrice);
+        rental.setStatus(RentalStatus.ACTIVE);
+        return rental;
+    }
+
     @Nested
     @DisplayName("Input Validation Cases")
     class InputValidation {
-
         @Test
         @DisplayName("Should reject when license plate is null")
         @Tag("UnitTest")
@@ -90,7 +106,7 @@ class CarRentUseCaseTest {
             assertThatThrownBy(() -> carRentUseCase.execute(invalidPlate, validCpf, today, inFiveDays, false))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("Invalid license plate: 111ABC");
-            verifyNoInteractions(carRepository, customerRepository, rentalRepository, pricingService, customerMapper, carMapper);
+            verifyNoInteractions(carRepository, customerRepository, rentalRepository, pricingService, customerMapper, carMapper, manageRentalUseCase);
         }
 
         @Test
@@ -112,7 +128,7 @@ class CarRentUseCaseTest {
             String invalidCpf = "123.456.789-10";
             assertThatThrownBy(() -> carRentUseCase.execute(validPlate, invalidCpf, today, inFiveDays, false))
                     .isInstanceOf(IllegalArgumentException.class);
-            verifyNoInteractions(carRepository, customerRepository, rentalRepository, pricingService, customerMapper, carMapper);
+            verifyNoInteractions(carRepository, customerRepository, rentalRepository, pricingService, customerMapper, carMapper, manageRentalUseCase);
         }
 
         @Test
@@ -189,7 +205,7 @@ class CarRentUseCaseTest {
                     .hasMessage("Customer not found.");
 
             verify(carRepository, never()).findByLicensePlate(anyString());
-            verify(rentalRepository, never()).save(any());
+            verify(manageRentalUseCase, never()).createRental(any(), any(), any(), any());
         }
 
         @Test
@@ -198,14 +214,15 @@ class CarRentUseCaseTest {
         @Tag("TDD")
         void shouldThrowExceptionWhenCarNotFound() {
             when(customerRepository.findByCpfNumber(CPF.of(validCpf).unformat())).thenReturn(Optional.of(existingCustomer));
-            when(customerMapper.toDomain(existingCustomer)).thenReturn(customerDomain);
             when(carRepository.findByLicensePlate(LicensePlate.of(validPlate).value())).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> carRentUseCase.execute(validPlate, validCpf, today, inFiveDays, false))
                     .isInstanceOf(CarNotFoundException.class)
                     .hasMessage("Car not found.");
 
-            verify(rentalRepository, never()).save(any());
+            verify(customerRepository, times(1)).findByCpfNumber(anyString());
+            verify(carRepository, times(1)).findByLicensePlate(anyString());
+            verify(manageRentalUseCase, never()).createRental(any(), any(), any(), any());
         }
 
         @Test
@@ -217,13 +234,13 @@ class CarRentUseCaseTest {
             when(customerMapper.toDomain(existingCustomer)).thenReturn(customerDomain);
             when(carRepository.findByLicensePlate(LicensePlate.of(validPlate).value())).thenReturn(Optional.of(existingCar));
             when(carMapper.toDomain(existingCar)).thenReturn(carDomain);
-            when(rentalRepository.existsByCarLicensePlateAndPeriodOverlaps(any(), any())).thenReturn(true);
+            when(rentalRepository.existsByCarLicensePlateAndPeriodOverlaps(any(), any(), any())).thenReturn(true);
 
             assertThatThrownBy(() -> carRentUseCase.execute(validPlate, validCpf, today, inFiveDays, false))
                     .isInstanceOf(CarUnavailableException.class)
                     .hasMessage("Car unavailable for the requested period.");
 
-            verify(rentalRepository, never()).save(any());
+            verify(manageRentalUseCase, never()).createRental(any(), any(), any(), any());
         }
     }
 
@@ -240,9 +257,9 @@ class CarRentUseCaseTest {
             when(customerMapper.toDomain(existingCustomer)).thenReturn(customerDomain);
             when(carRepository.findByLicensePlate(LicensePlate.of(validPlate).value())).thenReturn(Optional.of(existingCar));
             when(carMapper.toDomain(existingCar)).thenReturn(carDomain);
-            when(rentalRepository.existsByCarLicensePlateAndPeriodOverlaps(any(), any())).thenReturn(false);
+            when(rentalRepository.existsByCarLicensePlateAndPeriodOverlaps(any(), any(), any())).thenReturn(false);
             when(pricingService.calculateTotalPrice(any(Car.class), any(RentalPeriod.class), eq(false))).thenReturn(BigDecimal.TEN);
-            when(rentalRepository.save(any(Rental.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            when(manageRentalUseCase.createRental(any(), any(), any(), any())).thenReturn(buildMockRental(BigDecimal.TEN));
 
             Rental result = carRentUseCase.execute(validPlate, validCpf, today, inFiveDays, false);
 
@@ -250,7 +267,7 @@ class CarRentUseCaseTest {
             assertThat(result.getCar().licensePlate().value()).isEqualTo(validPlate);
             assertThat(result.getCustomer().cpf().toString()).isEqualTo(validCpf);
             assertThat(result.getTotalPrice()).isEqualByComparingTo(BigDecimal.TEN);
-            verify(rentalRepository, times(1)).save(any(Rental.class));
+            verify(manageRentalUseCase, times(1)).createRental(any(), any(), any(), any());
         }
 
         @Test
@@ -262,16 +279,16 @@ class CarRentUseCaseTest {
             when(customerMapper.toDomain(existingCustomer)).thenReturn(customerDomain);
             when(carRepository.findByLicensePlate(LicensePlate.of(validPlate).value())).thenReturn(Optional.of(existingCar));
             when(carMapper.toDomain(existingCar)).thenReturn(carDomain);
-            when(rentalRepository.existsByCarLicensePlateAndPeriodOverlaps(any(), any())).thenReturn(false);
+            when(rentalRepository.existsByCarLicensePlateAndPeriodOverlaps(any(), any(), any())).thenReturn(false);
             when(pricingService.calculateTotalPrice(any(Car.class), any(RentalPeriod.class), eq(false)))
                     .thenReturn(BigDecimal.valueOf(500.0));
-            when(rentalRepository.save(any(Rental.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            when(manageRentalUseCase.createRental(any(), any(), any(), any())).thenReturn(buildMockRental(BigDecimal.valueOf(500.0)));
 
             Rental result = carRentUseCase.execute(validPlate, validCpf, today, today.plusDays(5), false);
 
             assertThat(result).isNotNull();
             assertThat(result.getTotalPrice()).isEqualByComparingTo(BigDecimal.valueOf(500.0));
-            verify(rentalRepository, times(1)).save(any(Rental.class));
+            verify(manageRentalUseCase, times(1)).createRental(any(), any(), any(), any());
         }
 
         @Test
@@ -284,16 +301,16 @@ class CarRentUseCaseTest {
             when(customerMapper.toDomain(existingCustomer)).thenReturn(customerDomain);
             when(carRepository.findByLicensePlate(LicensePlate.of(validPlate).value())).thenReturn(Optional.of(existingCar));
             when(carMapper.toDomain(existingCar)).thenReturn(carDomain);
-            when(rentalRepository.existsByCarLicensePlateAndPeriodOverlaps(any(), any())).thenReturn(false);
+            when(rentalRepository.existsByCarLicensePlateAndPeriodOverlaps(any(), any(), any())).thenReturn(false);
             when(pricingService.calculateTotalPrice(any(Car.class), any(RentalPeriod.class), eq(false)))
                     .thenReturn(BigDecimal.valueOf(760.0));
-            when(rentalRepository.save(any(Rental.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            when(manageRentalUseCase.createRental(any(), any(), any(), any())).thenReturn(buildMockRental(BigDecimal.valueOf(760.0)));
 
             Rental result = carRentUseCase.execute(validPlate, validCpf, today, endDate, false);
 
             assertThat(result).isNotNull();
             assertThat(result.getTotalPrice()).isEqualByComparingTo(BigDecimal.valueOf(760.0));
-            verify(rentalRepository, times(1)).save(any(Rental.class));
+            verify(manageRentalUseCase, times(1)).createRental(any(), any(), any(), any());
         }
 
         @Test
@@ -306,16 +323,16 @@ class CarRentUseCaseTest {
             when(customerMapper.toDomain(existingCustomer)).thenReturn(customerDomain);
             when(carRepository.findByLicensePlate(LicensePlate.of(validPlate).value())).thenReturn(Optional.of(existingCar));
             when(carMapper.toDomain(existingCar)).thenReturn(carDomain);
-            when(rentalRepository.existsByCarLicensePlateAndPeriodOverlaps(any(), any())).thenReturn(false);
+            when(rentalRepository.existsByCarLicensePlateAndPeriodOverlaps(any(), any(), any())).thenReturn(false);
             when(pricingService.calculateTotalPrice(any(Car.class), any(RentalPeriod.class), eq(false)))
                     .thenReturn(BigDecimal.valueOf(1350.0));
-            when(rentalRepository.save(any(Rental.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            when(manageRentalUseCase.createRental(any(), any(), any(), any())).thenReturn(buildMockRental(BigDecimal.valueOf(1350.0)));
 
             Rental result = carRentUseCase.execute(validPlate, validCpf, today, endDate, false);
 
             assertThat(result).isNotNull();
             assertThat(result.getTotalPrice()).isEqualByComparingTo(BigDecimal.valueOf(1350.0));
-            verify(rentalRepository, times(1)).save(any(Rental.class));
+            verify(manageRentalUseCase, times(1)).createRental(any(), any(), any(), any());
         }
 
         @Test
@@ -329,16 +346,16 @@ class CarRentUseCaseTest {
             when(customerMapper.toDomain(existingCustomer)).thenReturn(customerDomain);
             when(carRepository.findByLicensePlate(LicensePlate.of(validPlate).value())).thenReturn(Optional.of(existingCar));
             when(carMapper.toDomain(existingCar)).thenReturn(carDomain);
-            when(rentalRepository.existsByCarLicensePlateAndPeriodOverlaps(any(), any())).thenReturn(false);
+            when(rentalRepository.existsByCarLicensePlateAndPeriodOverlaps(any(), any(), any())).thenReturn(false);
             when(pricingService.calculateTotalPrice(any(Car.class), any(RentalPeriod.class), eq(false)))
                     .thenReturn(BigDecimal.valueOf(312.0));
-            when(rentalRepository.save(any(Rental.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            when(manageRentalUseCase.createRental(any(), any(), any(), any())).thenReturn(buildMockRental(BigDecimal.valueOf(312.0)));
 
             Rental result = carRentUseCase.execute(validPlate, validCpf, startDate, endDate, false);
 
             assertThat(result).isNotNull();
             assertThat(result.getTotalPrice()).isEqualByComparingTo(BigDecimal.valueOf(312.0));
-            verify(rentalRepository, times(1)).save(any(Rental.class));
+            verify(manageRentalUseCase, times(1)).createRental(any(), any(), any(), any());
         }
 
         @Test
@@ -351,16 +368,16 @@ class CarRentUseCaseTest {
             when(customerMapper.toDomain(existingCustomer)).thenReturn(customerDomain);
             when(carRepository.findByLicensePlate(LicensePlate.of(validPlate).value())).thenReturn(Optional.of(existingCar));
             when(carMapper.toDomain(existingCar)).thenReturn(carDomain);
-            when(rentalRepository.existsByCarLicensePlateAndPeriodOverlaps(any(), any())).thenReturn(false);
+            when(rentalRepository.existsByCarLicensePlateAndPeriodOverlaps(any(), any(), any())).thenReturn(false);
             when(pricingService.calculateTotalPrice(any(Car.class), any(RentalPeriod.class), eq(true)))
                     .thenReturn(BigDecimal.valueOf(220.0));
-            when(rentalRepository.save(any(Rental.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            when(manageRentalUseCase.createRental(any(), any(), any(), any())).thenReturn(buildMockRental(BigDecimal.valueOf(220.0)));
 
             Rental result = carRentUseCase.execute(validPlate, validCpf, today, endDate, true);
 
             assertThat(result).isNotNull();
             assertThat(result.getTotalPrice()).isEqualByComparingTo(BigDecimal.valueOf(220.0));
-            verify(rentalRepository, times(1)).save(any(Rental.class));
+            verify(manageRentalUseCase, times(1)).createRental(any(), any(), any(), any());
         }
     }
 }
