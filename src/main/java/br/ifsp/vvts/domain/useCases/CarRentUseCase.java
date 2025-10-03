@@ -3,13 +3,13 @@ package br.ifsp.vvts.domain.useCases;
 import br.ifsp.vvts.domain.model.car.Car;
 import br.ifsp.vvts.domain.model.car.LicensePlate;
 import br.ifsp.vvts.domain.model.customer.CPF;
-import br.ifsp.vvts.domain.model.customer.Customer;
 import br.ifsp.vvts.domain.model.rental.Rental;
 import br.ifsp.vvts.domain.model.rental.RentalPeriod;
-import br.ifsp.vvts.domain.model.rental.RentalStatus;
 import br.ifsp.vvts.exception.CarNotFoundException;
 import br.ifsp.vvts.exception.CarUnavailableException;
 import br.ifsp.vvts.exception.CustomerNotFoundException;
+import br.ifsp.vvts.infra.persistence.entity.car.CarEntity;
+import br.ifsp.vvts.infra.persistence.entity.customer.CustomerEntity;
 import br.ifsp.vvts.infra.persistence.mapper.CarMapper;
 import br.ifsp.vvts.infra.persistence.mapper.CustomerMapper;
 import br.ifsp.vvts.infra.persistence.repository.CarRepository;
@@ -31,17 +31,18 @@ public class CarRentUseCase {
     private final PricingService pricingService;
     private final CustomerMapper customerMapper;
     private final CarMapper carMapper;
-
+    private final ManageRentalUseCase manageRentalUseCase;
 
     public CarRentUseCase(CarRepository carRepository, CustomerRepository customerRepository,
                           RentalRepository rentalRepository, PricingService pricingService,
-                          CustomerMapper customerMapper, CarMapper carMapper) {
+                          CustomerMapper customerMapper, CarMapper carMapper, ManageRentalUseCase manageRentalUseCase) {
         this.carRepository = carRepository;
         this.customerRepository = customerRepository;
         this.rentalRepository = rentalRepository;
         this.pricingService = pricingService;
         this.customerMapper = customerMapper;
         this.carMapper = carMapper;
+        this.manageRentalUseCase = manageRentalUseCase;
     }
 
     @Transactional
@@ -52,28 +53,22 @@ public class CarRentUseCase {
         CPF cpf = CPF.of(cpfValue);
         RentalPeriod period = new RentalPeriod(startDate, endDate);
 
-        Customer customer = customerRepository.findByCpfNumber(cpf.unformat())
-                .map(customerMapper::toDomain)
+        CustomerEntity customerEntity = customerRepository.findByCpfNumber(cpf.unformat())
                 .orElseThrow(() -> new CustomerNotFoundException("Customer not found."));
 
-        Car car = carRepository.findByLicensePlate(licensePlate.value())
-                .map(carMapper::toDomain)
+        CarEntity carEntity = carRepository.findByLicensePlate(licensePlate.value())
                 .orElseThrow(() -> new CarNotFoundException("Car not found."));
 
-        boolean isUnavailable = rentalRepository.existsByCarLicensePlateAndPeriodOverlaps(car.licensePlate(), period);
+        Car car = carMapper.toDomain(carEntity);
+
+        boolean isUnavailable = rentalRepository.existsByCarLicensePlateAndPeriodOverlaps(carEntity.getLicensePlate(),
+                period.startDate(), period.endDate());
         if (isUnavailable) {
             throw new CarUnavailableException("Car unavailable for the requested period.");
         }
 
         BigDecimal totalPrice = pricingService.calculateTotalPrice(car, period, withInsurance);
 
-        Rental newRental = new Rental();
-        newRental.setCustomer(customer);
-        newRental.setCar(car);
-        newRental.setPeriod(period);
-        newRental.setTotalPrice(totalPrice);
-        newRental.setStatus(RentalStatus.ACTIVE);
-
-        return rentalRepository.save(newRental);
+        return manageRentalUseCase.createRental(customerEntity, carEntity, period, totalPrice);
     }
 }
