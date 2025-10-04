@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Setter
 @Getter
@@ -16,5 +17,6 @@ public class Rental {
     private RentalPeriod period;
     private BigDecimal totalPrice;
     private RentalStatus status;
-
+    private LocalDate actualReturnDate;
+    private BigDecimal finalPrice;
 }

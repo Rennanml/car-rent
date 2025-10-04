@@ -42,6 +42,12 @@ public class RentalEntity {
     @Column(name = "status", nullable = false)
     private RentalStatus status;
 
+    @Column(name = "actual_return_date")
+    private LocalDate actualReturnDate;
+
+    @Column(name = "final_price")
+    private BigDecimal finalPrice;
+
     /**
      * @deprecated Construtor exigido pelo JPA. Não utilize.
      */
