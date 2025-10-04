@@ -106,6 +106,34 @@ class ReturnCarUseCaseTest {
 
             verify(rentalMapper, never()).toDomain(any());
         }
+
+        @Test
+        @DisplayName("Should reject return if the request object is null")
+        @Tag("UnitTest")
+        @Tag("Functional")
+        void shouldRejectReturnIfRequestIsNull() {
+            assertThatThrownBy(() -> returnCarUseCase.execute(null))
+                    .isInstanceOf(NullPointerException.class)
+                    .hasMessage("A solicitação de devolução não pode ser nula.");
+
+            verifyNoInteractions(rentalRepository, rentalMapper);
+        }
+
+        @Test
+        @DisplayName("Should reject return if actual return date is before rental start date")
+        @Tag("UnitTest")
+        @Tag("Functional")
+        void shouldRejectReturnIfDateIsBeforeStartDate() {
+            when(rentalRepository.findById(1L)).thenReturn(Optional.of(activeRentalEntity));
+            when(rentalMapper.toDomain(activeRentalEntity)).thenReturn(activeRentalDomain);
+
+            LocalDate dateBeforeRentalStarts = RENTAL_START_DATE.minusDays(1);
+            var request = new ReturnCarUseCase.Request(1L, dateBeforeRentalStarts, false, false);
+
+            assertThatThrownBy(() -> returnCarUseCase.execute(request))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("A data de devolução não pode ser anterior à data de início do aluguel.");
+        }
     }
 
     @Nested
@@ -140,9 +168,9 @@ class ReturnCarUseCaseTest {
         @BeforeEach
         void setUpMocks() {
             when(rentalRepository.findById(1L)).thenReturn(Optional.of(activeRentalEntity));
-            when(rentalMapper.toDomain(any(RentalEntity.class))).thenReturn(activeRentalDomain);
-            when(rentalMapper.toEntity(any(Rental.class))).thenReturn(activeRentalEntity);
-            when(rentalRepository.save(any(RentalEntity.class))).thenReturn(activeRentalEntity);
+            lenient().when(rentalMapper.toDomain(any(RentalEntity.class))).thenReturn(activeRentalDomain);
+            lenient().when(rentalMapper.toEntity(any(Rental.class))).thenReturn(activeRentalEntity);
+            lenient().when(rentalRepository.save(any(RentalEntity.class))).thenReturn(activeRentalEntity);
         }
 
         @Test
@@ -209,6 +237,23 @@ class ReturnCarUseCaseTest {
             Rental result = returnCarUseCase.execute(request);
 
             assertThat(result.getFinalPrice()).isEqualByComparingTo("1595.00");
+        }
+
+        @Test
+        @DisplayName("Should combine early return penalty with maintenance and cleaning fees")
+        @Tag("UnitTest")
+        @Tag("Functional")
+        void shouldCombineEarlyReturnWithFees() {
+            when(rentalRepository.findById(1L)).thenReturn(Optional.of(activeRentalEntity));
+            when(rentalMapper.toDomain(any(RentalEntity.class))).thenReturn(activeRentalDomain);
+            when(rentalMapper.toEntity(any(Rental.class))).thenReturn(activeRentalEntity);
+            when(rentalRepository.save(any(RentalEntity.class))).thenReturn(activeRentalEntity);
+
+            LocalDate earlyReturnDate = RENTAL_START_DATE.plusDays(7); // 3 dias antes
+            var request = new ReturnCarUseCase.Request(1L, earlyReturnDate, true, true);
+
+            Rental result = returnCarUseCase.execute(request);
+            assertThat(result.getFinalPrice()).isEqualByComparingTo("1008.50");
         }
     }
 }
