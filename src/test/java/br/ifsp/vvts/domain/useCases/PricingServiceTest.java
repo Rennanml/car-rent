@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.LocalDate;
 
@@ -51,6 +52,19 @@ class PricingServiceTest {
             assertThatThrownBy(() -> pricingService.calculateTotalPrice(standardCar, null, false))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("O período não pode ser nulo.");
+        }
+
+        @ParameterizedTest
+        @ValueSource(doubles = {0.00, -50.00})
+        @DisplayName("Should throw exception when car base price is zero or negative")
+        @Tag("UnitTest")
+        @Tag("Functional")
+        void shouldThrowExceptionWhenCarPriceIsZeroOrNegative(double invalidPrice) {
+            assertThatThrownBy(() -> {
+                new Car(LicensePlate.of("ABC1234"), "Brand", "Model", invalidPrice);
+            })
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Base price must be positive");
         }
     }
 
