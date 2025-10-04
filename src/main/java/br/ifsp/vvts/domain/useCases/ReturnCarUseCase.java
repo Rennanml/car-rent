@@ -39,6 +39,10 @@ public class ReturnCarUseCase {
 
     @Transactional
     public Rental execute(Request request) {
+        if (request == null) {
+            throw new NullPointerException("A solicitação de devolução não pode ser nula.");
+        }
+
         RentalEntity rentalEntity = rentalRepository.findById(request.rentalId())
                 .orElseThrow(() -> new RuntimeException("Aluguel inexistente."));
 
@@ -46,6 +50,10 @@ public class ReturnCarUseCase {
 
         if (rental.getStatus() == RentalStatus.FINISHED) {
             throw new IllegalStateException("Este aluguel já foi encerrado.");
+        }
+
+        if (request.actualReturnDate().isBefore(rental.getPeriod().startDate())) {
+            throw new IllegalArgumentException("A data de devolução não pode ser anterior à data de início do aluguel.");
         }
 
         BigDecimal finalPrice = calculateFinalPrice(rental, request);
