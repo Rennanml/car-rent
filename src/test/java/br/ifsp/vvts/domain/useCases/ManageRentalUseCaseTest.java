@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -79,6 +80,36 @@ class ManageRentalUseCaseTest {
             assertThat(result.getStatus()).isEqualTo(RentalStatus.ACTIVE);
             verify(rentalRepository, times(1)).save(any(RentalEntity.class));
             verify(rentalMapper, times(1)).toDomain(any(RentalEntity.class));
+        }
+
+        @Test
+        @DisplayName("Should throw exception when creating a rental with a null customer")
+        @Tag("UnitTest")
+        @Tag("Functional")
+        void shouldThrowExceptionWhenCustomerIsNull() {
+            RentalPeriod period = new RentalPeriod(LocalDate.now(), LocalDate.now().plusDays(5));
+            BigDecimal totalPrice = BigDecimal.valueOf(500.0);
+
+            assertThatThrownBy(() -> manageRentalUseCase.createRental(null, carEntity, period, totalPrice))
+                    .isInstanceOf(NullPointerException.class)
+                    .hasMessage("Cliente não pode ser nulo.");
+
+            verify(rentalRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Should throw exception when creating a rental with a null car")
+        @Tag("UnitTest")
+        @Tag("Functional")
+        void shouldThrowExceptionWhenCarIsNull() {
+            RentalPeriod period = new RentalPeriod(LocalDate.now(), LocalDate.now().plusDays(5));
+            BigDecimal totalPrice = BigDecimal.valueOf(500.0);
+
+            assertThatThrownBy(() -> manageRentalUseCase.createRental(customerEntity, null, period, totalPrice))
+                    .isInstanceOf(NullPointerException.class)
+                    .hasMessage("Carro não pode ser nulo.");
+
+            verify(rentalRepository, never()).save(any());
         }
     }
 
