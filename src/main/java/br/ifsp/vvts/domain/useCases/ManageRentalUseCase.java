@@ -30,6 +30,13 @@ public class ManageRentalUseCase {
 
     @Transactional
     public Rental createRental(CustomerEntity customerEntity, CarEntity carEntity, RentalPeriod period, BigDecimal totalPrice) {
+        if (customerEntity == null) {
+            throw new NullPointerException("Cliente não pode ser nulo.");
+        }
+        if (carEntity == null) {
+            throw new NullPointerException("Carro não pode ser nulo.");
+        }
+
         RentalEntity newRentalEntity = new RentalEntity(
                 null,
                 customerEntity,
