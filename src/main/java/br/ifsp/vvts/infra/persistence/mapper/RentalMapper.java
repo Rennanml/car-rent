@@ -29,6 +29,33 @@ public class RentalMapper {
         domainObject.setTotalPrice(entity.getTotalPrice());
         domainObject.setStatus(entity.getStatus());
 
+        domainObject.setActualReturnDate(entity.getActualReturnDate());
+        domainObject.setFinalPrice(entity.getFinalPrice());
+
         return domainObject;
+    }
+
+    public RentalEntity toEntity(Rental rental) {
+        if (rental == null) {
+            return null;
+        }
+        RentalEntity entity = new RentalEntity();
+
+        entity.setId(rental.getId());
+        entity.setCustomer(customerMapper.toEntity(rental.getCustomer()));
+        entity.setCar(carMapper.toEntity(rental.getCar()));
+
+        if (rental.getPeriod() != null) {
+            entity.setStartDate(rental.getPeriod().startDate());
+            entity.setEndDate(rental.getPeriod().endDate());
+        }
+
+        entity.setTotalPrice(rental.getTotalPrice());
+        entity.setStatus(rental.getStatus());
+
+        entity.setActualReturnDate(rental.getActualReturnDate());
+        entity.setFinalPrice(rental.getFinalPrice());
+
+        return entity;
     }
 }
