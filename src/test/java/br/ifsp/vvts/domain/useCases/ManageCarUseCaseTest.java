@@ -260,4 +260,72 @@ class ManageCarUseCaseTest {
         }
     }
 
+    @Nested
+    @DisplayName("Car Fleet Management Operations")
+    class CarFleetManagementOperations  {
+        @Test
+        @DisplayName("Should manage complete car fleet operations")
+        @Tag("Functional")
+        void shouldManageCompleteCarFleetOperations() {
+            String[] plates = {"ABC1D23", "DEF4E56", "GHI7J89"};
+            String[] brands = {"Fiat", "Volkswagen", "Chevrolet"};
+            String[] models = {"Argo", "Polo", "Tracker"};
+            double[] prices = {130.0, 170.0, 250.0};
+
+            List<CarEntity> fleetEntities = List.of(
+                    new CarEntity(1L, new LicensePlateEmbeddable(plates[0]), brands[0], models[0], prices[0]),
+                    new CarEntity(2L, new LicensePlateEmbeddable(plates[1]), brands[1], models[1], prices[1]),
+                    new CarEntity(3L, new LicensePlateEmbeddable(plates[2]), brands[2], models[2], prices[2])
+            );
+
+            List<Car> fleetCars = List.of(
+                    new Car(LicensePlate.of(plates[0]), brands[0], models[0], prices[0]),
+                    new Car(LicensePlate.of(plates[1]), brands[1], models[1], prices[1]),
+                    new Car(LicensePlate.of(plates[2]), brands[2], models[2], prices[2])
+            );
+
+            when(carRepository.findAll()).thenReturn(fleetEntities);
+            when(carMapper.toDomain(fleetEntities.get(0))).thenReturn(fleetCars.get(0));
+            when(carMapper.toDomain(fleetEntities.get(1))).thenReturn(fleetCars.get(1));
+            when(carMapper.toDomain(fleetEntities.get(2))).thenReturn(fleetCars.get(2));
+
+            List<Car> allCars = manageCarUseCase.getAllCars();
+
+            assertThat(allCars).hasSize(3);
+            assertThat(allCars).extracting(Car::brand).containsExactly("Fiat", "Volkswagen", "Chevrolet");
+
+            when(carRepository.findByLicensePlate(plates[1])).thenReturn(Optional.of(fleetEntities.get(1)));
+            when(carMapper.toDomain(fleetEntities.get(1))).thenReturn(fleetCars.get(1));
+
+            Optional<Car> foundCar = manageCarUseCase.findCarByLicensePlate(plates[1]);
+
+            assertThat(foundCar).isPresent();
+            assertThat(foundCar.get().model()).isEqualTo("Polo");
+
+            var updatedEntity = new CarEntity(2L, new LicensePlateEmbeddable(plates[1]), brands[1], models[1], 190.0);
+            var updatedCar = new Car(LicensePlate.of(plates[1]), brands[1], models[1], 190.0);
+
+            when(carRepository.findByLicensePlate(plates[1])).thenReturn(Optional.of(fleetEntities.get(1)));
+            when(carRepository.save(any(CarEntity.class))).thenReturn(updatedEntity);
+            when(carMapper.toDomain(updatedEntity)).thenReturn(updatedCar);
+
+            Optional<Car> updatedResult = manageCarUseCase.updateCar(plates[1], brands[1], models[1], 190.0);
+
+            assertThat(updatedResult).isPresent();
+            assertThat(updatedResult.get().basePrice()).isEqualTo(190.0);
+
+            when(carRepository.findByLicensePlate(plates[0])).thenReturn(Optional.of(fleetEntities.getFirst()));
+            doNothing().when(carRepository).delete(fleetEntities.getFirst());
+
+            boolean deleteResult = manageCarUseCase.deleteCar(plates[0]);
+
+            assertThat(deleteResult).isTrue();
+
+            verify(carRepository, times(1)).findAll();
+            verify(carRepository, times(3)).findByLicensePlate(anyString());
+            verify(carRepository, times(1)).save(any());
+            verify(carRepository, times(1)).delete(any());
+        }
+
+    }
 }
