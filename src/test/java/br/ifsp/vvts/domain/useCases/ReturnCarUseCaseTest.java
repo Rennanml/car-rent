@@ -182,6 +182,38 @@ class ReturnCarUseCaseTest {
                             entity.getFinalPrice().compareTo(new BigDecimal("1000.00")) == 0
             ));
         }
+
+        @Test
+        @DisplayName("Should process return successfully with valid data")
+        @Tag("Functional")
+        void shouldProcessReturnSuccessfully() {
+            when(rentalRepository.findById(1L)).thenReturn(Optional.of(activeRentalEntity));
+            when(rentalMapper.toDomain(activeRentalEntity)).thenReturn(activeRentalDomain);
+
+            Rental updatedRental = new Rental();
+            updatedRental.setId(1L);
+            updatedRental.setCar(activeRentalDomain.getCar());
+            updatedRental.setPeriod(activeRentalDomain.getPeriod());
+            updatedRental.setStatus(RentalStatus.FINISHED);
+            updatedRental.setTotalPrice(new BigDecimal("1000.00"));
+            updatedRental.setActualReturnDate(RENTAL_START_DATE.plusDays(8));
+            updatedRental.setFinalPrice(new BigDecimal("940.00"));
+
+            when(rentalMapper.toDomain(activeRentalEntity)).thenReturn(activeRentalDomain, updatedRental);
+            when(rentalRepository.save(any(RentalEntity.class))).thenReturn(activeRentalEntity);
+
+            LocalDate returnDate = RENTAL_START_DATE.plusDays(8);
+            var request = new ReturnCarRequest(1L, returnDate, false, false);
+
+            Rental result = returnCarUseCase.execute(request);
+
+            assertThat(result).isNotNull();
+            assertThat(result.getId()).isEqualTo(1L);
+            assertThat(result.getStatus()).isEqualTo(RentalStatus.FINISHED);
+            assertThat(result.getActualReturnDate()).isEqualTo(returnDate);
+            assertThat(result.getFinalPrice()).isNotNull();
+            verify(rentalRepository, times(1)).save(any(RentalEntity.class));
+        }
     }
 
     @Nested
