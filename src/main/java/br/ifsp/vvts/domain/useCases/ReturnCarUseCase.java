@@ -1,5 +1,6 @@
 package br.ifsp.vvts.domain.useCases;
 
+import br.ifsp.vvts.domain.dto.ReturnCarRequest;
 import br.ifsp.vvts.domain.model.car.Car;
 import br.ifsp.vvts.domain.model.rental.Rental;
 import br.ifsp.vvts.domain.model.rental.RentalStatus;
@@ -17,10 +18,10 @@ import java.time.temporal.ChronoUnit;
 @Service
 public class ReturnCarUseCase {
 
-    private static final BigDecimal EARLY_RETURN_PENALTY_RATE = new BigDecimal("0.30"); // 30%
-    private static final BigDecimal LATE_RETURN_PENALTY_RATE = new BigDecimal("0.50");  // 50%
-    private static final BigDecimal MAINTENANCE_FEE_RATE = new BigDecimal("0.15");      // 15%
-    private static final BigDecimal CLEANING_FEE_AMOUNT = new BigDecimal("100.00");     // R$100.00
+    private static final BigDecimal EARLY_RETURN_PENALTY_RATE = new BigDecimal("0.30");
+    private static final BigDecimal LATE_RETURN_PENALTY_RATE = new BigDecimal("0.50");
+    private static final BigDecimal MAINTENANCE_FEE_RATE = new BigDecimal("0.15");
+    private static final BigDecimal CLEANING_FEE_AMOUNT = new BigDecimal("100.00");
 
     private final RentalRepository rentalRepository;
     private final RentalMapper rentalMapper;
@@ -30,15 +31,8 @@ public class ReturnCarUseCase {
         this.rentalMapper = rentalMapper;
     }
 
-    public record Request(
-            Long rentalId,
-            LocalDate actualReturnDate,
-            boolean needsMaintenance,
-            boolean needsCleaning
-    ) {}
-
     @Transactional
-    public Rental execute(Request request) {
+    public Rental execute(ReturnCarRequest request) {
         if (request == null) {
             throw new NullPointerException("A solicitação de devolução não pode ser nula.");
         }
@@ -51,24 +45,22 @@ public class ReturnCarUseCase {
         if (rental.getStatus() == RentalStatus.FINISHED) {
             throw new IllegalStateException("Este aluguel já foi encerrado.");
         }
-
         if (request.actualReturnDate().isBefore(rental.getPeriod().startDate())) {
             throw new IllegalArgumentException("A data de devolução não pode ser anterior à data de início do aluguel.");
         }
 
         BigDecimal finalPrice = calculateFinalPrice(rental, request);
 
-        rental.setActualReturnDate(request.actualReturnDate());
-        rental.setFinalPrice(finalPrice);
-        rental.setStatus(RentalStatus.FINISHED);
+        rentalEntity.setActualReturnDate(request.actualReturnDate());
+        rentalEntity.setFinalPrice(finalPrice);
+        rentalEntity.setStatus(RentalStatus.FINISHED);
 
-        RentalEntity entityToSave = rentalMapper.toEntity(rental);
-        RentalEntity savedEntity = rentalRepository.save(entityToSave);
+        RentalEntity savedEntity = rentalRepository.save(rentalEntity);
 
         return rentalMapper.toDomain(savedEntity);
     }
 
-    private BigDecimal calculateFinalPrice(Rental rental, Request request) {
+    private BigDecimal calculateFinalPrice(Rental rental, ReturnCarRequest request) {
         Car car = rental.getCar();
         LocalDate expectedReturnDate = rental.getPeriod().endDate();
         LocalDate actualReturnDate = request.actualReturnDate();
