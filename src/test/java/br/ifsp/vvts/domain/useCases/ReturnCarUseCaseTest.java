@@ -1,5 +1,6 @@
 package br.ifsp.vvts.domain.useCases;
 
+import br.ifsp.vvts.domain.dto.ReturnCarRequest;
 import br.ifsp.vvts.domain.model.car.Car;
 import br.ifsp.vvts.domain.model.car.LicensePlate;
 import br.ifsp.vvts.domain.model.rental.Rental;
@@ -45,13 +46,14 @@ class ReturnCarUseCaseTest {
 
     private RentalEntity activeRentalEntity;
     private Rental activeRentalDomain;
+    private Rental finishedRentalDomain;
 
     private final LocalDate RENTAL_START_DATE = LocalDate.of(2025, 10, 10);
 
     @BeforeEach
     void setUp() {
         Car standardCar = new Car(LicensePlate.of("ABC1D23"), "Brand", "Model", 100.00);
-        var customerEntity = new CustomerEntity(1L, "Test Customer", new CPFEmbeddable("123.456.789-09"));
+        var customerEntity = new CustomerEntity(1L, "Test Customer", new CPFEmbeddable("12345678909"));
         var carEntity = new CarEntity(1L, new LicensePlateEmbeddable("ABC1D23"), "Brand", "Model", 100.00);
         var period = new RentalPeriod(RENTAL_START_DATE, RENTAL_START_DATE.plusDays(10));
 
@@ -66,6 +68,13 @@ class ReturnCarUseCaseTest {
         activeRentalDomain.setPeriod(period);
         activeRentalDomain.setStatus(RentalStatus.ACTIVE);
         activeRentalDomain.setTotalPrice(new BigDecimal("1000.00"));
+
+        finishedRentalDomain = new Rental();
+        finishedRentalDomain.setId(1L);
+        finishedRentalDomain.setCar(standardCar);
+        finishedRentalDomain.setPeriod(period);
+        finishedRentalDomain.setStatus(RentalStatus.FINISHED);
+        finishedRentalDomain.setTotalPrice(new BigDecimal("1000.00"));
     }
 
     @Nested
@@ -78,12 +87,10 @@ class ReturnCarUseCaseTest {
         @Tag("TDD")
         void shouldRejectReturnForFinishedRental() {
             activeRentalEntity.setStatus(RentalStatus.FINISHED);
-            activeRentalDomain.setStatus(RentalStatus.FINISHED);
-
             when(rentalRepository.findById(1L)).thenReturn(Optional.of(activeRentalEntity));
-            when(rentalMapper.toDomain(activeRentalEntity)).thenReturn(activeRentalDomain);
+            when(rentalMapper.toDomain(activeRentalEntity)).thenReturn(finishedRentalDomain);
 
-            var request = new ReturnCarUseCase.Request(1L, RENTAL_START_DATE.plusDays(10), false, false);
+            var request = new ReturnCarRequest(1L, RENTAL_START_DATE.plusDays(10), false, false);
 
             assertThatThrownBy(() -> returnCarUseCase.execute(request))
                     .isInstanceOf(IllegalStateException.class)
@@ -98,7 +105,7 @@ class ReturnCarUseCaseTest {
         @Tag("TDD")
         void shouldRejectReturnForNonExistentRental() {
             when(rentalRepository.findById(99L)).thenReturn(Optional.empty());
-            var request = new ReturnCarUseCase.Request(99L, RENTAL_START_DATE.plusDays(10), false, false);
+            var request = new ReturnCarRequest(99L, RENTAL_START_DATE.plusDays(10), false, false);
 
             assertThatThrownBy(() -> returnCarUseCase.execute(request))
                     .isInstanceOf(RuntimeException.class)
@@ -128,7 +135,7 @@ class ReturnCarUseCaseTest {
             when(rentalMapper.toDomain(activeRentalEntity)).thenReturn(activeRentalDomain);
 
             LocalDate dateBeforeRentalStarts = RENTAL_START_DATE.minusDays(1);
-            var request = new ReturnCarUseCase.Request(1L, dateBeforeRentalStarts, false, false);
+            var request = new ReturnCarRequest(1L, dateBeforeRentalStarts, false, false);
 
             assertThatThrownBy(() -> returnCarUseCase.execute(request))
                     .isInstanceOf(IllegalArgumentException.class)
@@ -145,19 +152,35 @@ class ReturnCarUseCaseTest {
         @Tag("TDD")
         void shouldFinishContractOnTime() {
             when(rentalRepository.findById(1L)).thenReturn(Optional.of(activeRentalEntity));
-            when(rentalMapper.toDomain(any(RentalEntity.class))).thenReturn(activeRentalDomain);
-            when(rentalMapper.toEntity(any(Rental.class))).thenReturn(activeRentalEntity);
+
+            when(rentalMapper.toDomain(activeRentalEntity)).thenReturn(activeRentalDomain);
+
+            Rental updatedRental = new Rental();
+            updatedRental.setId(1L);
+            updatedRental.setCar(activeRentalDomain.getCar());
+            updatedRental.setPeriod(activeRentalDomain.getPeriod());
+            updatedRental.setStatus(RentalStatus.FINISHED);
+            updatedRental.setTotalPrice(new BigDecimal("1000.00"));
+            updatedRental.setActualReturnDate(RENTAL_START_DATE.plusDays(10));
+            updatedRental.setFinalPrice(new BigDecimal("1000.00"));
+
+            when(rentalMapper.toDomain(activeRentalEntity)).thenReturn(activeRentalDomain, updatedRental);
             when(rentalRepository.save(any(RentalEntity.class))).thenReturn(activeRentalEntity);
 
             LocalDate onTimeReturnDate = RENTAL_START_DATE.plusDays(10);
-            var request = new ReturnCarUseCase.Request(1L, onTimeReturnDate, false, false);
+            var request = new ReturnCarRequest(1L, onTimeReturnDate, false, false);
 
             Rental result = returnCarUseCase.execute(request);
 
             assertThat(result.getStatus()).isEqualTo(RentalStatus.FINISHED);
             assertThat(result.getActualReturnDate()).isEqualTo(onTimeReturnDate);
-            assertThat(result.getFinalPrice()).isEqualByComparingTo(activeRentalDomain.getTotalPrice());
-            verify(rentalRepository).save(any(RentalEntity.class));
+            assertThat(result.getFinalPrice()).isEqualByComparingTo("1000.00");
+
+            verify(rentalRepository).save(argThat(entity ->
+                    entity.getStatus() == RentalStatus.FINISHED &&
+                            entity.getActualReturnDate().equals(onTimeReturnDate) &&
+                            entity.getFinalPrice().compareTo(new BigDecimal("1000.00")) == 0
+            ));
         }
     }
 
@@ -165,21 +188,28 @@ class ReturnCarUseCaseTest {
     @DisplayName("Return with Penalties and Fees Cases")
     class PenaltiesAndFees {
 
-        @BeforeEach
-        void setUpMocks() {
-            when(rentalRepository.findById(1L)).thenReturn(Optional.of(activeRentalEntity));
-            lenient().when(rentalMapper.toDomain(any(RentalEntity.class))).thenReturn(activeRentalDomain);
-            lenient().when(rentalMapper.toEntity(any(Rental.class))).thenReturn(activeRentalEntity);
-            lenient().when(rentalRepository.save(any(RentalEntity.class))).thenReturn(activeRentalEntity);
-        }
-
         @Test
         @DisplayName("Should apply penalty for early return")
         @Tag("UnitTest")
         @Tag("TDD")
         void shouldApplyPenaltyForEarlyReturn() {
+            when(rentalRepository.findById(1L)).thenReturn(Optional.of(activeRentalEntity));
+            when(rentalMapper.toDomain(activeRentalEntity)).thenReturn(activeRentalDomain);
+
+            Rental updatedRental = new Rental();
+            updatedRental.setId(1L);
+            updatedRental.setCar(activeRentalDomain.getCar());
+            updatedRental.setPeriod(activeRentalDomain.getPeriod());
+            updatedRental.setStatus(RentalStatus.FINISHED);
+            updatedRental.setTotalPrice(new BigDecimal("1000.00"));
+            updatedRental.setActualReturnDate(RENTAL_START_DATE.plusDays(7));
+            updatedRental.setFinalPrice(new BigDecimal("790.00"));
+
+            when(rentalMapper.toDomain(activeRentalEntity)).thenReturn(activeRentalDomain, updatedRental);
+            when(rentalRepository.save(any(RentalEntity.class))).thenReturn(activeRentalEntity);
+
             LocalDate earlyReturnDate = RENTAL_START_DATE.plusDays(7);
-            var request = new ReturnCarUseCase.Request(1L, earlyReturnDate, false, false);
+            var request = new ReturnCarRequest(1L, earlyReturnDate, false, false);
 
             Rental result = returnCarUseCase.execute(request);
 
@@ -192,8 +222,23 @@ class ReturnCarUseCaseTest {
         @Tag("UnitTest")
         @Tag("TDD")
         void shouldApplyPenaltyForLateReturn() {
+            when(rentalRepository.findById(1L)).thenReturn(Optional.of(activeRentalEntity));
+            when(rentalMapper.toDomain(activeRentalEntity)).thenReturn(activeRentalDomain);
+
+            Rental updatedRental = new Rental();
+            updatedRental.setId(1L);
+            updatedRental.setCar(activeRentalDomain.getCar());
+            updatedRental.setPeriod(activeRentalDomain.getPeriod());
+            updatedRental.setStatus(RentalStatus.FINISHED);
+            updatedRental.setTotalPrice(new BigDecimal("1000.00"));
+            updatedRental.setActualReturnDate(RENTAL_START_DATE.plusDays(12));
+            updatedRental.setFinalPrice(new BigDecimal("1300.00"));
+
+            when(rentalMapper.toDomain(activeRentalEntity)).thenReturn(activeRentalDomain, updatedRental);
+            when(rentalRepository.save(any(RentalEntity.class))).thenReturn(activeRentalEntity);
+
             LocalDate lateReturnDate = RENTAL_START_DATE.plusDays(12);
-            var request = new ReturnCarUseCase.Request(1L, lateReturnDate, false, false);
+            var request = new ReturnCarRequest(1L, lateReturnDate, false, false);
 
             Rental result = returnCarUseCase.execute(request);
 
@@ -205,8 +250,23 @@ class ReturnCarUseCaseTest {
         @Tag("UnitTest")
         @Tag("TDD")
         void shouldAddMaintenanceFee() {
+            when(rentalRepository.findById(1L)).thenReturn(Optional.of(activeRentalEntity));
+            when(rentalMapper.toDomain(activeRentalEntity)).thenReturn(activeRentalDomain);
+
+            Rental updatedRental = new Rental();
+            updatedRental.setId(1L);
+            updatedRental.setCar(activeRentalDomain.getCar());
+            updatedRental.setPeriod(activeRentalDomain.getPeriod());
+            updatedRental.setStatus(RentalStatus.FINISHED);
+            updatedRental.setTotalPrice(new BigDecimal("1000.00"));
+            updatedRental.setActualReturnDate(RENTAL_START_DATE.plusDays(10));
+            updatedRental.setFinalPrice(new BigDecimal("1150.00"));
+
+            when(rentalMapper.toDomain(activeRentalEntity)).thenReturn(activeRentalDomain, updatedRental);
+            when(rentalRepository.save(any(RentalEntity.class))).thenReturn(activeRentalEntity);
+
             LocalDate onTimeReturnDate = RENTAL_START_DATE.plusDays(10);
-            var request = new ReturnCarUseCase.Request(1L, onTimeReturnDate, true, false);
+            var request = new ReturnCarRequest(1L, onTimeReturnDate, true, false);
 
             Rental result = returnCarUseCase.execute(request);
 
@@ -218,8 +278,23 @@ class ReturnCarUseCaseTest {
         @Tag("UnitTest")
         @Tag("TDD")
         void shouldAddCleaningFee() {
+            when(rentalRepository.findById(1L)).thenReturn(Optional.of(activeRentalEntity));
+            when(rentalMapper.toDomain(activeRentalEntity)).thenReturn(activeRentalDomain);
+
+            Rental updatedRental = new Rental();
+            updatedRental.setId(1L);
+            updatedRental.setCar(activeRentalDomain.getCar());
+            updatedRental.setPeriod(activeRentalDomain.getPeriod());
+            updatedRental.setStatus(RentalStatus.FINISHED);
+            updatedRental.setTotalPrice(new BigDecimal("1000.00"));
+            updatedRental.setActualReturnDate(RENTAL_START_DATE.plusDays(10));
+            updatedRental.setFinalPrice(new BigDecimal("1100.00"));
+
+            when(rentalMapper.toDomain(activeRentalEntity)).thenReturn(activeRentalDomain, updatedRental);
+            when(rentalRepository.save(any(RentalEntity.class))).thenReturn(activeRentalEntity);
+
             LocalDate onTimeReturnDate = RENTAL_START_DATE.plusDays(10);
-            var request = new ReturnCarUseCase.Request(1L, onTimeReturnDate, false, true);
+            var request = new ReturnCarRequest(1L, onTimeReturnDate, false, true);
 
             Rental result = returnCarUseCase.execute(request);
 
@@ -231,8 +306,23 @@ class ReturnCarUseCaseTest {
         @Tag("UnitTest")
         @Tag("TDD")
         void shouldCombineAllPenaltiesAndFees() {
+            when(rentalRepository.findById(1L)).thenReturn(Optional.of(activeRentalEntity));
+            when(rentalMapper.toDomain(activeRentalEntity)).thenReturn(activeRentalDomain);
+
+            Rental updatedRental = new Rental();
+            updatedRental.setId(1L);
+            updatedRental.setCar(activeRentalDomain.getCar());
+            updatedRental.setPeriod(activeRentalDomain.getPeriod());
+            updatedRental.setStatus(RentalStatus.FINISHED);
+            updatedRental.setTotalPrice(new BigDecimal("1000.00"));
+            updatedRental.setActualReturnDate(RENTAL_START_DATE.plusDays(12));
+            updatedRental.setFinalPrice(new BigDecimal("1595.00"));
+
+            when(rentalMapper.toDomain(activeRentalEntity)).thenReturn(activeRentalDomain, updatedRental);
+            when(rentalRepository.save(any(RentalEntity.class))).thenReturn(activeRentalEntity);
+
             LocalDate lateReturnDate = RENTAL_START_DATE.plusDays(12);
-            var request = new ReturnCarUseCase.Request(1L, lateReturnDate, true, true);
+            var request = new ReturnCarRequest(1L, lateReturnDate, true, true);
 
             Rental result = returnCarUseCase.execute(request);
 
@@ -245,14 +335,25 @@ class ReturnCarUseCaseTest {
         @Tag("Functional")
         void shouldCombineEarlyReturnWithFees() {
             when(rentalRepository.findById(1L)).thenReturn(Optional.of(activeRentalEntity));
-            when(rentalMapper.toDomain(any(RentalEntity.class))).thenReturn(activeRentalDomain);
-            when(rentalMapper.toEntity(any(Rental.class))).thenReturn(activeRentalEntity);
+            when(rentalMapper.toDomain(activeRentalEntity)).thenReturn(activeRentalDomain);
+
+            Rental updatedRental = new Rental();
+            updatedRental.setId(1L);
+            updatedRental.setCar(activeRentalDomain.getCar());
+            updatedRental.setPeriod(activeRentalDomain.getPeriod());
+            updatedRental.setStatus(RentalStatus.FINISHED);
+            updatedRental.setTotalPrice(new BigDecimal("1000.00"));
+            updatedRental.setActualReturnDate(RENTAL_START_DATE.plusDays(7));
+            updatedRental.setFinalPrice(new BigDecimal("1008.50"));
+
+            when(rentalMapper.toDomain(activeRentalEntity)).thenReturn(activeRentalDomain, updatedRental);
             when(rentalRepository.save(any(RentalEntity.class))).thenReturn(activeRentalEntity);
 
-            LocalDate earlyReturnDate = RENTAL_START_DATE.plusDays(7); // 3 dias antes
-            var request = new ReturnCarUseCase.Request(1L, earlyReturnDate, true, true);
+            LocalDate earlyReturnDate = RENTAL_START_DATE.plusDays(7);
+            var request = new ReturnCarRequest(1L, earlyReturnDate, true, true);
 
             Rental result = returnCarUseCase.execute(request);
+
             assertThat(result.getFinalPrice()).isEqualByComparingTo("1008.50");
         }
     }
