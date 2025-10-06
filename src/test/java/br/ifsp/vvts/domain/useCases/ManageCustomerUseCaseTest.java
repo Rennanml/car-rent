@@ -144,6 +144,32 @@ class ManageCustomerUseCaseTest {
             assertThat(result).isNotPresent();
             verify(customerRepository, never()).save(any());
         }
+
+        @Test
+        @DisplayName("Should perform complete customer information update")
+        @Tag("Functional")
+        void shouldPerformCompleteCustomerInformationUpdate() {
+            String originalName = "Maria Oliveira";
+            String updatedName = "Maria Oliveira Santos";
+
+            var existingEntity = new CustomerEntity(1L, originalName, VALID_CPF_EMBEDDABLE);
+            var updatedCustomer = new Customer(updatedName, VALID_CPF_OBJECT);
+
+            when(customerRepository.findByCpfNumber(VALID_CPF_UNFORMATTED)).thenReturn(Optional.of(existingEntity));
+            when(customerRepository.save(any(CustomerEntity.class))).thenReturn(existingEntity);
+            when(customerMapper.toDomain(existingEntity)).thenReturn(updatedCustomer);
+
+            Optional<Customer> result = manageCustomerUseCase.updateCustomer(VALID_CPF_STRING, updatedName);
+
+            assertThat(result).isPresent();
+            assertThat(result.get().name()).isEqualTo("Maria Oliveira Santos");
+            assertThat(result.get().cpf().format()).isEqualTo(VALID_CPF_STRING); // CPF permanece o mesmo
+
+            verify(customerRepository).save(argThat(entity ->
+                    entity.getName().equals(updatedName) &&
+                            entity.getCpf().getNumber().equals(VALID_CPF_UNFORMATTED)
+            ));
+        }
     }
 
     @Nested
