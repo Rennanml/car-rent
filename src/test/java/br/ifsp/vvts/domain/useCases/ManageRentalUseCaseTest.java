@@ -92,7 +92,7 @@ class ManageRentalUseCaseTest {
 
             assertThatThrownBy(() -> manageRentalUseCase.createRental(null, carEntity, period, totalPrice))
                     .isInstanceOf(NullPointerException.class)
-                    .hasMessage("Cliente não pode ser nulo.");
+                    .hasMessage("Client cannot be null.");
 
             verify(rentalRepository, never()).save(any());
         }
@@ -107,7 +107,7 @@ class ManageRentalUseCaseTest {
 
             assertThatThrownBy(() -> manageRentalUseCase.createRental(customerEntity, null, period, totalPrice))
                     .isInstanceOf(NullPointerException.class)
-                    .hasMessage("Carro não pode ser nulo.");
+                    .hasMessage("Car cannot be null.");
 
             verify(rentalRepository, never()).save(any());
         }

@@ -94,7 +94,7 @@ class ReturnCarUseCaseTest {
 
             assertThatThrownBy(() -> returnCarUseCase.execute(request))
                     .isInstanceOf(IllegalStateException.class)
-                    .hasMessage("Este aluguel já foi encerrado.");
+                    .hasMessage("This rental has now ended.");
 
             verify(rentalRepository, never()).save(any());
         }
@@ -109,7 +109,7 @@ class ReturnCarUseCaseTest {
 
             assertThatThrownBy(() -> returnCarUseCase.execute(request))
                     .isInstanceOf(RuntimeException.class)
-                    .hasMessage("Aluguel inexistente.");
+                    .hasMessage("Non-existent rent.");
 
             verify(rentalMapper, never()).toDomain(any());
         }
@@ -121,7 +121,7 @@ class ReturnCarUseCaseTest {
         void shouldRejectReturnIfRequestIsNull() {
             assertThatThrownBy(() -> returnCarUseCase.execute(null))
                     .isInstanceOf(NullPointerException.class)
-                    .hasMessage("A solicitação de devolução não pode ser nula.");
+                    .hasMessage("The return request cannot be null.");
 
             verifyNoInteractions(rentalRepository, rentalMapper);
         }
@@ -139,7 +139,7 @@ class ReturnCarUseCaseTest {
 
             assertThatThrownBy(() -> returnCarUseCase.execute(request))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage("A data de devolução não pode ser anterior à data de início do aluguel.");
+                    .hasMessage("The return date cannot be earlier than the rental start date.");
         }
     }
 
