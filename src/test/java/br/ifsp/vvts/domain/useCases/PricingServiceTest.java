@@ -41,7 +41,7 @@ class PricingServiceTest {
             var period = new RentalPeriod(MONDAY, MONDAY.plusDays(1));
             assertThatThrownBy(() -> pricingService.calculateTotalPrice(null, period, false))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage("O carro não pode ser nulo.");
+                    .hasMessage("The car cannot be null.");
         }
 
         @Test
@@ -51,7 +51,7 @@ class PricingServiceTest {
         void shouldThrowExceptionWhenPeriodIsNull() {
             assertThatThrownBy(() -> pricingService.calculateTotalPrice(standardCar, null, false))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage("O período não pode ser nulo.");
+                    .hasMessage("The period cannot be null.");
         }
 
         @ParameterizedTest
