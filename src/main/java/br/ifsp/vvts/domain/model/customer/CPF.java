@@ -22,7 +22,7 @@ public class CPF implements Serializable {
     public static CPF of(String raw) {
         String d = normalize(raw);
         if (!isValidDigits(d)) {
-            throw new IllegalArgumentException("CPF inválido: " + raw);
+            throw new IllegalArgumentException("Invalid CPF: " + raw);
         }
         return new CPF(d);
     }

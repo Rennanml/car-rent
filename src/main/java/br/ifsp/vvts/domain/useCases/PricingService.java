@@ -64,10 +64,10 @@ public class PricingService {
 
     public BigDecimal calculateTotalPrice(Car car, RentalPeriod period, boolean withInsurance) {
         if (car == null) {
-            throw new IllegalArgumentException("O carro não pode ser nulo.");
+            throw new IllegalArgumentException("The car cannot be null.");
         }
         if (period == null) {
-            throw new IllegalArgumentException("O período não pode ser nulo.");
+            throw new IllegalArgumentException("The period cannot be null.");
         }
 
         long totalDays = period.getDays();
