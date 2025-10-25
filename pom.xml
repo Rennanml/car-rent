@@ -162,8 +162,8 @@
                     </dependency>
                 </dependencies>
                 <configuration>
-                    <targetClasses></targetClasses>
-                    <targetTests></targetTests>
+                    <targetClasses>br.ifsp.vvts.domain*</targetClasses>
+                    <targetTests>br.ifsp.vvts.domain*</targetTests>
                 </configuration>
             </plugin>
             <plugin>
