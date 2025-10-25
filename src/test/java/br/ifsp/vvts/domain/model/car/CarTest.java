@@ -10,6 +10,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Nested
 @DisplayName("Car Record Tests")
 class CarTest {
 
