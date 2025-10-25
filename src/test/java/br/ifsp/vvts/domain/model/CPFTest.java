@@ -6,9 +6,10 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.*;
 
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
@@ -115,6 +116,86 @@ class CPFTest {
             CPF cpf = CPF.of("52998224725");
 
             assertThat(cpf.toString()).isEqualTo("529.982.247-25");
+        }
+
+        @Tag("UnitTest")
+        @Tag("Structural")
+        @Test
+        @DisplayName("Should return true when object is compared to itself")
+        void shouldReturnTrueForSameInstance() {
+            CPF cpf = CPF.of("12345678909");
+            assertThat(cpf.equals(cpf)).isTrue();
+        }
+
+        @Tag("UnitTest")
+        @Tag("Structural")
+        @DisplayName("Should return false when compared to null or different type")
+        @ParameterizedTest
+        @NullSource
+        @MethodSource("differentTypesProvider")
+        void shouldReturnFalseWhenComparedToNullOrDifferentType(Object otherObject) {
+            CPF cpf = CPF.of("12345678909");
+
+            assertThat(cpf.equals(otherObject)).isFalse();
+        }
+
+        private static Stream<Object> differentTypesProvider() {
+            return Stream.of(
+                    new Object(),
+                    "12345678909",
+                    12345678909L
+            );
+        }
+    }
+
+    @Nested
+    @DisplayName("Validate Tests")
+    class ValidateTests {
+        @Tag("UnitTest")
+        @Tag("Structural")
+        @DisplayName("Should Return False When CPF is not valid")
+        @NullAndEmptySource
+        @ParameterizedTest
+        @ValueSource(strings = {"12345", "1234567891011"})
+        void shouldReturnFalseWhenCpfIsNotValid(String input) {
+            assertThat(CPF.isValid(input)).isFalse();
+        }
+
+        @Tag("UnitTest")
+        @Tag("Structural")
+        @DisplayName("Should Return True For Valid CPF Strings")
+        @ParameterizedTest
+        @ValueSource(strings = {
+                "98422104059",
+                "34600611039",
+                "79038576064",
+                "322.625.480-48",
+                "963 819 260 74"
+        })
+        void shouldReturnTrueForValidCpfStrings(String input) {
+            assertThat(CPF.isValid(input)).isTrue();
+        }
+
+        @Tag("Structural")
+        @DisplayName("Should Return False When First Verifier Digit Is Wrong")
+        @ParameterizedTest
+        @ValueSource(strings = {
+                "12345678919",
+                "98765432110"
+        })
+        void shouldReturnFalseWhenFirstDigitIsWrong(String input) {
+            assertThat(CPF.isValid(input)).isFalse();
+        }
+
+        @Tag("Structural")
+        @DisplayName("Should Return False When Second Verifier Digit Is Wrong")
+        @ParameterizedTest
+        @ValueSource(strings = {
+                "12345678908",
+                "98765432101"
+        })
+        void shouldReturnFalseWhenSecondDigitIsWrong(String input) {
+            assertThat(CPF.isValid(input)).isFalse();
         }
     }
 }
