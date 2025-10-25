@@ -87,6 +87,20 @@ class ManageCarUseCaseTest {
             assertThatThrownBy(() -> manageCarUseCase.createCar(INVALID_LICENSE_PLATE, "Honda", "Civic", 180.0))
                     .isInstanceOf(IllegalArgumentException.class);
         }
+
+        @Test
+        @DisplayName("Should throw EntityAlreadyExistsException if car already exists when creating")
+        @Tag("Structural")
+        @Tag("UnitTest")
+        void shouldThrowExceptionWhenCreatingExistingCar() {
+            when(carRepository.findByLicensePlate(VALID_LICENSE_PLATE)).thenReturn(Optional.of(carEntity));
+
+            assertThatThrownBy(() -> manageCarUseCase.createCar(VALID_LICENSE_PLATE, "Toyota", "Corolla", 150.0))
+                    .isInstanceOf(br.ifsp.vvts.exception.EntityAlreadyExistsException.class)
+                    .hasMessageContaining("A car with this license plate already exists.");
+
+            verify(carRepository, never()).save(any());
+        }
     }
 
     @Nested
@@ -135,6 +149,16 @@ class ManageCarUseCaseTest {
 
             assertThat(result).isNotPresent();
             verify(carRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Should throw exception when updating car with null brand")
+        @Tag("Structural")
+        @Tag("UnitTest")
+        void shouldThrowExceptionWhenUpdatingWithNullBrand() {
+            assertThatThrownBy(() -> manageCarUseCase.updateCar(VALID_LICENSE_PLATE, null, "Updated Model", 200.0))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Car brand cannot be blank");
         }
     }
 
