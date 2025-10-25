@@ -9,6 +9,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 class LicensePlateTest {
 
@@ -52,6 +53,8 @@ class LicensePlateTest {
 
     @Nested
     @DisplayName("Equality and hashCode")
+    @Tag("UnitTest")
+    @Tag("TDD")
     class EqualityAndHashCode {
 
         @Test
@@ -76,6 +79,47 @@ class LicensePlateTest {
 
             assertThat(p1).isNotEqualTo(p2);
             assertThat(p1.hashCode()).isNotEqualTo(p2.hashCode());
+        }
+    }
+
+    @Nested
+    @DisplayName("License Plate Additional Tests")
+    public class LicensePlateAdditionalTests {
+
+        @Test
+        @DisplayName("Should return the plate value when calling toString()")
+        @Tag("Structural")
+        @Tag("UnitTest")
+        void shouldReturnPlateValueWhenCallingToString() {
+            LicensePlate plate = LicensePlate.of("ABC1D34");
+            assertThat(plate.toString()).isEqualTo("ABC1D34");
+        }
+
+        @Test
+        @DisplayName("Should be equal to itself (reflexive property)")
+        @Tag("Structural")
+        @Tag("UnitTest")
+        void shouldBeEqualToItself() {
+            LicensePlate plate = LicensePlate.of("BRA2E19");
+            assertEquals(plate, plate);
+        }
+
+        @Test
+        @DisplayName("Should not be equal to null")
+        @Tag("Structural")
+        @Tag("UnitTest")
+        void shouldNotBeEqualToNull() {
+            LicensePlate plate = LicensePlate.of("ABC1D34");
+            assertThat(plate).isNotEqualTo(null);
+        }
+
+        @Test
+        @DisplayName("Should not be equal to an object of a different class")
+        @Tag("Structural")
+        @Tag("UnitTest")
+        void shouldNotBeEqualToDifferentType() {
+            LicensePlate plate = LicensePlate.of("ABC1D34");
+            assertThat(plate).isNotEqualTo(new Object());
         }
     }
 }
