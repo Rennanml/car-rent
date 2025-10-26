@@ -160,6 +160,58 @@ class ManageCarUseCaseTest {
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("Car brand cannot be blank");
         }
+
+        @Test
+        @DisplayName("Should update car successfully and verify all changed fields")
+        @Tag("Mutation")
+        @Tag("UnitTest")
+        void shouldUpdateCarAndAssertAllFieldsChanged() {
+            String licensePlateValue = "ABC1234";
+            String newBrand = "Toyota";
+            String newModel = "Corolla";
+            double newPrice = 90000.0;
+
+            LicensePlateEmbeddable licensePlateEmbeddable = new LicensePlateEmbeddable(licensePlateValue);
+
+            CarEntity existingEntity = new CarEntity();
+            existingEntity.setLicensePlate(licensePlateEmbeddable);
+            existingEntity.setBrand("Ford");
+            existingEntity.setModel("Ka");
+            existingEntity.setBasePrice(50000.0);
+
+            when(carRepository.findByLicensePlate(licensePlateValue))
+                    .thenReturn(Optional.of(existingEntity));
+            when(carRepository.save(existingEntity)).thenReturn(existingEntity);
+            when(carMapper.toDomain(any(CarEntity.class))).thenAnswer(invocation -> {
+                CarEntity entity = invocation.getArgument(0);
+                return new Car(
+                        LicensePlate.of(entity.getLicensePlate().getValue()),
+                        entity.getBrand(),
+                        entity.getModel(),
+                        entity.getBasePrice()
+                );
+            });
+
+            Optional<Car> result = manageCarUseCase.updateCar(
+                    licensePlateValue,
+                    newBrand,
+                    newModel,
+                    newPrice
+            );
+
+            assertThat(result).isPresent();
+
+            Car car = result.get();
+            assertThat(car.brand()).isEqualTo(newBrand);
+            assertThat(car.model()).isEqualTo(newModel);
+            assertThat(car.basePrice()).isEqualTo(newPrice);
+            assertThat(car.licensePlate().value()).isEqualTo(licensePlateValue);
+
+            verify(carRepository).findByLicensePlate(licensePlateValue);
+            verify(carRepository).save(existingEntity);
+            verify(carMapper).toDomain(existingEntity);
+        }
+
     }
 
     @Nested
