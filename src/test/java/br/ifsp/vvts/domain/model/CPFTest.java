@@ -11,8 +11,9 @@ import org.junit.jupiter.params.provider.*;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 class CPFTest {
     @Nested
@@ -176,6 +177,7 @@ class CPFTest {
             assertThat(CPF.isValid(input)).isTrue();
         }
 
+        @Tag("UnitTest")
         @Tag("Structural")
         @DisplayName("Should Return False When First Verifier Digit Is Wrong")
         @ParameterizedTest
@@ -187,6 +189,7 @@ class CPFTest {
             assertThat(CPF.isValid(input)).isFalse();
         }
 
+        @Tag("UnitTest")
         @Tag("Structural")
         @DisplayName("Should Return False When Second Verifier Digit Is Wrong")
         @ParameterizedTest
@@ -196,6 +199,45 @@ class CPFTest {
         })
         void shouldReturnFalseWhenSecondDigitIsWrong(String input) {
             assertThat(CPF.isValid(input)).isFalse();
+        }
+
+        @Test
+        @DisplayName("Should Validate Correctly When First Digit Rest Is Two")
+        void shouldValidateCorrectlyWhenFirstDigitRestIsTwo() {
+            String cpfValidoComResto2 = "12345671998";
+
+            assertThat(CPF.isValid(cpfValidoComResto2)).isTrue();
+        }
+    }
+
+    @Nested
+    @DisplayName("Hashcode tests")
+    class Hashcode {
+
+        @Tag("Unit Test")
+        @Tag("Mutation")
+        @Test
+        @DisplayName("Hash Code Should Be Different When Objects Are Different")
+        void hashCodeShouldBeDifferentWhenObjectsAreDifferent() {
+            CPF cpf1 = CPF.of("123.456.789-09");
+            CPF cpf2 = CPF.of("358.355.130-38");
+
+            assertThat(cpf1).isNotEqualTo(cpf2);
+
+            assertThat(cpf1.hashCode()).isNotEqualTo(cpf2.hashCode());
+        }
+
+        @Tag("Unit Test")
+        @Tag("Mutation")
+        @Test
+        @DisplayName("Hash Code Should Be Equal When Objects Are Equal")
+        void hashCodeShouldBeEqualWhenObjectsAreEqual() {
+            CPF cpf1 = CPF.of("123.456.789-09");
+            CPF cpf2 = CPF.of("123.456.789-09");
+
+            assertThat(cpf1).isEqualTo(cpf2);
+
+            assertThat(cpf1.hashCode()).isEqualTo(cpf2.hashCode());
         }
     }
 }
