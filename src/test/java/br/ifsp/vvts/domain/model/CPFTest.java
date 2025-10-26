@@ -12,8 +12,6 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 class CPFTest {
     @Nested
@@ -214,7 +212,7 @@ class CPFTest {
     @DisplayName("Hashcode tests")
     class Hashcode {
 
-        @Tag("Unit Test")
+        @Tag("UnitTest")
         @Tag("Mutation")
         @Test
         @DisplayName("Hash Code Should Be Different When Objects Are Different")
@@ -227,7 +225,7 @@ class CPFTest {
             assertThat(cpf1.hashCode()).isNotEqualTo(cpf2.hashCode());
         }
 
-        @Tag("Unit Test")
+        @Tag("UnitTest")
         @Tag("Mutation")
         @Test
         @DisplayName("Hash Code Should Be Equal When Objects Are Equal")
