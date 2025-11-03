@@ -388,5 +388,67 @@ class ReturnCarUseCaseTest {
 
             assertThat(result.getFinalPrice()).isEqualByComparingTo("1008.50");
         }
+
+        @Test
+        @DisplayName("Should correctly calculate final price for early return")
+        @Tag("Mutation")
+        @Tag("UnitTest")
+        void shouldCalculateFinalPriceForEarlyReturn() {
+            LocalDate earlyReturnDate = RENTAL_START_DATE.plusDays(7);
+            var request = new ReturnCarRequest(1L, earlyReturnDate, false, false);
+
+            when(rentalRepository.findById(1L)).thenReturn(Optional.of(activeRentalEntity));
+            when(rentalRepository.save(any(RentalEntity.class))).thenReturn(activeRentalEntity);
+
+            when(rentalMapper.toDomain(activeRentalEntity))
+                    .thenReturn(activeRentalDomain)
+                    .thenAnswer(invocation -> {
+                        RentalEntity savedEntity = invocation.getArgument(0);
+                        Rental result = new Rental();
+                        result.setId(savedEntity.getId());
+                        result.setCar(activeRentalDomain.getCar());
+                        result.setPeriod(activeRentalDomain.getPeriod());
+                        result.setTotalPrice(activeRentalDomain.getTotalPrice());
+                        result.setStatus(savedEntity.getStatus());
+                        result.setActualReturnDate(savedEntity.getActualReturnDate());
+                        result.setFinalPrice(savedEntity.getFinalPrice());
+                        return result;
+                    });
+
+            Rental result = returnCarUseCase.execute(request);
+
+            assertThat(result.getFinalPrice()).isEqualByComparingTo("790.00");
+        }
+
+        @Test
+        @DisplayName("Should correctly calculate final price for late return")
+        @Tag("Mutation")
+        @Tag("UnitTest")
+        void shouldCalculateFinalPriceForLateReturn() {
+            LocalDate lateReturnDate = RENTAL_START_DATE.plusDays(12);
+            var request = new ReturnCarRequest(1L, lateReturnDate, false, false);
+
+            when(rentalRepository.findById(1L)).thenReturn(Optional.of(activeRentalEntity));
+            when(rentalRepository.save(any(RentalEntity.class))).thenReturn(activeRentalEntity);
+
+            when(rentalMapper.toDomain(activeRentalEntity))
+                    .thenReturn(activeRentalDomain)
+                    .thenAnswer(invocation -> {
+                        RentalEntity savedEntity = invocation.getArgument(0);
+                        Rental result = new Rental();
+                        result.setId(savedEntity.getId());
+                        result.setCar(activeRentalDomain.getCar());
+                        result.setPeriod(activeRentalDomain.getPeriod());
+                        result.setTotalPrice(activeRentalDomain.getTotalPrice());
+                        result.setStatus(savedEntity.getStatus());
+                        result.setActualReturnDate(savedEntity.getActualReturnDate());
+                        result.setFinalPrice(savedEntity.getFinalPrice());
+                        return result;
+                    });
+
+            Rental result = returnCarUseCase.execute(request);
+
+            assertThat(result.getFinalPrice()).isEqualByComparingTo("1300.00");
+        }
     }
 }

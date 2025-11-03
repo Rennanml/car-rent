@@ -76,8 +76,7 @@ public class CPF implements Serializable {
     }
 
     private static boolean isValidDigits(String d) {
-        if (d == null || d.length() != 11) return false;
-        if (!DIGITS.matcher(d).matches()) return false;
+        if (d.length() != 11) return false;
         boolean allSame = true;
         for (int i = 1; i < d.length(); i++) {
             if (d.charAt(i) != d.charAt(0)) { allSame = false; break; }
