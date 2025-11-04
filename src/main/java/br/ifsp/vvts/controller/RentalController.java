@@ -1,7 +1,6 @@
 package br.ifsp.vvts.controller;
 
 import br.ifsp.vvts.domain.dto.CreateRentalRequest;
-import br.ifsp.vvts.domain.dto.UpdateRentalStatusRequest;
 import br.ifsp.vvts.domain.model.rental.Rental;
 import br.ifsp.vvts.domain.useCases.CarRentUseCase;
 import br.ifsp.vvts.domain.useCases.ManageRentalUseCase;
@@ -55,16 +54,6 @@ public class RentalController {
     public ResponseEntity<Rental> findById(@PathVariable Long id) {
         authService.getAuthenticatedUserId();
         return manageRentalUseCase.findRentalById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @PutMapping("/{id}/status")
-    public ResponseEntity<Rental> updateStatus(@PathVariable Long id, @RequestBody UpdateRentalStatusRequest request) {
-        authService.getAuthenticatedUserId();
-        Optional<Rental> updatedRental = manageRentalUseCase.updateRentalStatus(id, request.status());
-
-        return updatedRental
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
