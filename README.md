@@ -92,6 +92,14 @@ O front-end desta aplicação foi desenvolvido em Angular e está em um **reposi
 
 ## 🧑‍💻 Autores
 
+**Abel Baes Correia**
+
+* [GitHub](https://github.com/abelBaes)
+
+**Felipe Marins Vilela**
+
+* [GitHub](https://github.com/Felipe-Vilela)
+
 **Rennan Marcile Lazarini**
 
 * [GitHub](https://github.com/Rennanml)
